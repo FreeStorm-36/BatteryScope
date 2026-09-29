@@ -60,8 +60,8 @@ const progress = computed(() => (current.value / (chapters.length - 1)) * 100)
 <style scoped lang="scss">
 .site-header {
   position: fixed; inset: 0 0 auto; z-index: 100;
-  background: rgba(6, 13, 13, 0.84);
-  border-bottom: 1px solid rgba(94, 184, 159, 0.16);
+  background: rgba(8, 12, 22, 0.84);
+  border-bottom: 1px solid rgba(90, 150, 220, 0.18);
   backdrop-filter: blur(18px) saturate(1.15);
   -webkit-backdrop-filter: blur(18px) saturate(1.15);
 }
@@ -75,10 +75,10 @@ const progress = computed(() => (current.value / (chapters.length - 1)) * 100)
   color: var(--text-1); text-decoration: none;
   .brand-mark {
     width: 36px; height: 36px; display: grid; place-items: center;
-    border: 1px solid rgba(52, 211, 153, 0.38); border-radius: 10px;
-    background: rgba(52, 211, 153, 0.08);
+    border: 1px solid rgba(77, 168, 255, 0.4); border-radius: 10px;
+    background: rgba(77, 168, 255, 0.09);
   }
-  svg { width: 23px; fill: none; stroke: var(--green); stroke-width: 1.6; stroke-linecap: round; }
+  svg { width: 23px; fill: none; stroke: var(--blue); stroke-width: 1.6; stroke-linecap: round; }
   b { display: block; font-size: 15px; letter-spacing: 0.025em; }
   i { display: block; color: var(--text-3); font-size: 10.5px; font-style: normal; letter-spacing: 0.08em; }
 }
@@ -91,36 +91,36 @@ const progress = computed(() => (current.value / (chapters.length - 1)) * 100)
   b { font-size: 12.5px; font-weight: 500; white-space: nowrap; }
   &::after {
     content: ''; position: absolute; left: 12px; right: 12px; bottom: 4px; height: 1px;
-    background: var(--green); transform: scaleX(0); transition: transform 0.22s ease;
+    background: var(--blue); transform: scaleX(0); transition: transform 0.22s ease;
   }
   &:hover { color: var(--text-1); background: rgba(255,255,255,0.035); }
-  &.done { color: #78968e; }
-  &.active { color: #e9fff7; background: rgba(52, 211, 153, 0.075); }
+  &.done { color: #7a8aa4; }
+  &.active { color: #eaf6ff; background: rgba(77, 168, 255, 0.09); }
   &.active::after { transform: scaleX(1); }
 }
 .nav-status {
   justify-self: end; display: flex; align-items: center; gap: 9px;
-  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 9px rgba(52,211,153,.75); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 7px rgba(34,211,238,.6); }
   .status-copy { min-width: 0; }
   i { display: block; color: var(--text-3); font-size: 9.5px; line-height: 1.1; font-style: normal; }
   b { display: block; max-width: 150px; color: var(--text-2); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .counter { padding: 4px 8px; border: 1px solid var(--hairline); border-radius: 999px; color: var(--green); font-size: 10.5px; }
+  .counter { padding: 4px 8px; border: 1px solid var(--hairline); border-radius: 999px; color: var(--cyan); font-size: 10.5px; }
 }
 .energy-rail {
   position: relative; width: min(1380px, calc(100% - 48px)); height: 10px; margin: 0 auto;
-  border-top: 1px solid rgba(105, 155, 145, 0.12);
+  border-top: 1px solid rgba(90, 130, 190, 0.14);
 }
 .energy-rail::before, .rail-fill { content: ''; position: absolute; left: 0; top: -1px; height: 1px; }
-.energy-rail::before { right: 0; background: rgba(105, 155, 145, 0.12); }
-.rail-fill { background: linear-gradient(90deg, var(--green), var(--cyan)); transition: width .7s cubic-bezier(.2,.7,.3,1); }
+.energy-rail::before { right: 0; background: rgba(90, 130, 190, 0.14); }
+.rail-fill { background: linear-gradient(90deg, var(--blue), var(--cyan)); transition: width .7s cubic-bezier(.2,.7,.3,1); }
 .rail-node {
   position: absolute; top: -4px; width: 7px; height: 7px; border-radius: 50%; transform: translateX(-50%);
-  background: #13211f; border: 1px solid #43665d;
-  &.done, &.active { background: var(--green); border-color: #b7f7de; }
+  background: #16223c; border: 1px solid #3d5885;
+  &.done, &.active { background: var(--blue); border-color: #bfe3ff; }
 }
 .li-marker {
   position: absolute; top: -6px; width: 11px; height: 11px; border-radius: 50%; transform: translateX(-50%);
-  background: #dffff5; border: 2px solid var(--green); box-shadow: 0 0 12px rgba(52,211,153,.75);
+  background: #d9fbff; border: 2px solid var(--cyan); box-shadow: 0 0 10px rgba(34,211,238,.6);
   transition: left .7s cubic-bezier(.2,.7,.3,1);
 }
 @media (max-width: 1080px) {

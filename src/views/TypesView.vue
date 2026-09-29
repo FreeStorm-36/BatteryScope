@@ -9,33 +9,45 @@
 
     <!-- 数字展柜 -->
     <div class="showcase">
-      <div class="stage panel" ref="stageBox">
-        <div ref="threeBox" class="three-box"></div>
-        <svg class="guide-svg" ref="guideSvg">
-          <line class="guide-line" :style="{ opacity: selected ? 0.8 : 0 }" x1="0" y1="0" x2="0" y2="0" />
-          <circle class="guide-dot" :style="{ opacity: selected ? 0.9 : 0 }" cx="0" cy="0" r="4" />
-        </svg>
+      <div class="stage-col">
+        <div class="stage panel" ref="stageBox">
+          <div ref="threeBox" class="three-box"></div>
+          <svg class="guide-svg" ref="guideSvg">
+            <line class="guide-line" :style="{ opacity: selected ? 0.8 : 0 }" x1="0" y1="0" x2="0" y2="0" />
+            <circle class="guide-dot" :style="{ opacity: selected ? 0.9 : 0 }" cx="0" cy="0" r="4" />
+          </svg>
 
-        <!-- 外形切换 -->
-        <div class="shape-row">
-          <button v-for="s in batteryShapes" :key="s.key" class="btn-ghost" :class="{ active: shape === s.key }" @click="switchShape(s.key)">
-            {{ s.key === 'prism' ? '方形' : s.key === 'pouch' ? '软包' : s.key }}
-          </button>
+          <!-- 外形切换 -->
+          <div class="shape-row">
+            <button v-for="s in batteryShapes" :key="s.key" class="btn-ghost" :class="{ active: shape === s.key }" @click="switchShape(s.key)">
+              {{ s.key === 'prism' ? '方形' : s.key === 'pouch' ? '软包' : s.key }}
+            </button>
+          </div>
+
+          <!-- 参照尺寸 + 视角操作 -->
+          <div class="stage-tools">
+            <div class="size-tag num">{{ curShape.size }}</div>
+            <button class="btn-ghost view-reset" title="恢复到初始角度与距离" @click="resetView">
+              <IconGlyph name="reset" /> 重置视角
+            </button>
+            <p class="view-hint">拖拽旋转 · 滚轮缩放 · 右键平移</p>
+          </div>
+
+          <!-- 返回整体 -->
+          <button v-if="selected" class="btn-ghost back-btn" @click="deselect">⟵ 返回整体</button>
         </div>
-        <!-- 参照尺寸 -->
-        <div class="size-tag num">{{ curShape.size }}</div>
 
-        <!-- 拆解控制 -->
+        <!-- 拆解控制：放在舞台下方，不再叠在画面上。
+             原先它横跨舞台底部约 1/4，把电芯下半截压住，导致模型最多只能做到画幅六成
+             才不撞上它。移出来后，细长的圆柱居中、左右两侧全是留白，
+             模型可以放心放大到画幅八成以上，四角的控件也不会碰到它。 -->
         <div class="teardown panel-glass">
           <button class="btn-ghost icon" :aria-label="tdPlaying ? '暂停拆解' : '播放拆解'" @click="tdPlaying = !tdPlaying"><IconGlyph :name="tdPlaying ? 'pause' : 'play'" /></button>
           <button class="btn-ghost icon" aria-label="复位拆解" @click="resetTeardown"><IconGlyph name="reset" /></button>
           <input type="range" min="0" max="100" step="0.5" v-model.number="tdPercent" @input="tdPlaying = false" />
           <span class="td-step num">{{ tdPhase.label }}</span>
+          <span class="td-caption" v-if="tdPhase.caption">{{ tdPhase.caption }}</span>
         </div>
-        <div class="td-caption" v-if="tdPhase.caption">{{ tdPhase.caption }}</div>
-
-        <!-- 返回整体 -->
-        <button v-if="selected" class="btn-ghost back-btn" @click="deselect">⟵ 返回整体</button>
       </div>
 
       <!-- 部件详情抽屉 -->
@@ -103,7 +115,8 @@ import * as THREE from 'three'
 import gsap from 'gsap'
 import { initChart } from '../services/charts.js'
 import { createLabScene } from '../three/labScene.js'
-import { buildCylindricalCell, buildTightJellyRoll, buildPrismaticCell, buildPouchCell } from '../three/batteryModel.js'
+import { createCameraFly } from '../three/cameraFly.js'
+import { buildCylindricalCell, buildTightJellyRoll, buildPrismaticCell, buildPouchCell, CELL_SPECS } from '../three/batteryModel.js'
 import { batteryShapes, chemistries } from '../data/index.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
 import DataBadge from '../components/DataBadge.vue'
@@ -145,23 +158,25 @@ const PART_INFO = {
 
 /* ── 每个外形的热点（锚点为模型局部坐标） ── */
 const HOTSPOTS = {
+  // 锚点按真实尺寸模型（1 unit = 10 mm）标定：
+  // 18650 = Φ18×65 → r 0.90 / h 6.50；21700 = Φ21×70 → r 1.05 / h 7.00
   '18650': [
-    { partId: 'terminal', label: '正极端子', anchor: [0, 1.85, 0] },
-    { partId: 'vent', label: '安全阀', anchor: [0, 1.76, 0.5] },
-    { partId: 'shell', label: '钢壳', anchor: [0.9, 0.4, 0.4] },
-    { partId: 'wrap', label: '热缩膜标签', anchor: [-0.6, -0.6, 0.85] },
-    { partId: 'negativeCap', label: '负极底盖', anchor: [0, -1.85, 0] },
+    { partId: 'terminal', label: '正极凸台', anchor: [0, 3.19, 0] },
+    { partId: 'vent', label: '安全阀刻痕', anchor: [0.36, 3.08, 0.36] },
+    { partId: 'shell', label: '镀镍钢壳', anchor: [0.86, 0.55, 0.3] },
+    { partId: 'wrap', label: '热缩膜标签', anchor: [-0.67, -1.6, 0.62] },
+    { partId: 'negativeCap', label: '负极端面', anchor: [0, -3.17, 0] },
     { partId: 'roll', label: '卷芯（剖视）', anchor: [0, 0, 0] },
-    { partId: 'tabs', label: '极耳', anchor: [0.3, 1.2, 0.2] }
+    { partId: 'tabs', label: '极耳', anchor: [0.28, 2.5, 0.19] }
   ],
   '21700': [
-    { partId: 'terminal', label: '正极端子', anchor: [0, 1.98, 0] },
-    { partId: 'vent', label: '安全阀', anchor: [0, 1.9, 0.55] },
-    { partId: 'shell', label: '钢壳', anchor: [1.0, 0.5, 0.4] },
-    { partId: 'wrap', label: '热缩膜标签', anchor: [-0.7, -0.5, 0.95] },
-    { partId: 'negativeCap', label: '负极底盖', anchor: [0, -1.98, 0] },
+    { partId: 'terminal', label: '正极凸台', anchor: [0, 3.44, 0] },
+    { partId: 'vent', label: '安全阀刻痕', anchor: [0.42, 3.31, 0.42] },
+    { partId: 'shell', label: '镀镍钢壳', anchor: [1.0, 0.6, 0.35] },
+    { partId: 'wrap', label: '热缩膜标签', anchor: [-0.78, -1.7, 0.72] },
+    { partId: 'negativeCap', label: '负极端面', anchor: [0, -3.42, 0] },
     { partId: 'roll', label: '卷芯（剖视）', anchor: [0, 0, 0] },
-    { partId: 'tabs', label: '极耳', anchor: [0.3, 1.3, 0.2] }
+    { partId: 'tabs', label: '极耳', anchor: [0.32, 2.7, 0.22] }
   ],
   prism: [
     { partId: 'posTerminal', label: '正极极柱', anchor: [-0.6, 2.0, 0] },
@@ -225,40 +240,48 @@ function makeHotspotSprite() {
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64)
   const tex = new THREE.CanvasTexture(c)
   const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }))
-  spr.scale.setScalar(0.34)
+  // 精灵挂在 modelGroup 内，会跟着基准缩放一起缩小；
+  // 基准从 0.88 降到 0.6 后，这里按比例放大回原视觉尺寸（0.34 × 0.88 ≈ 0.5 × 0.6）。
+  spr.scale.setScalar(0.5)
   return spr
 }
 
 function buildModel() {
   disposeModel()
   modelGroup = new THREE.Group()
-  modelGroup.scale.setScalar(0.88) // 基准缩放：缩小初始观感
+  // 基准缩放：模型本身已是真实尺寸（21700 高 7.0 unit），这里只把整体观感缩到画框内
+  modelGroup.scale.setScalar(0.6)
 
   if (shape.value === '18650' || shape.value === '21700') {
-    const is21 = shape.value === '21700'
-    const r = is21 ? 1.07 : 0.92, h = is21 ? 3.6 : 3.3
-    const cell = buildCylindricalCell({ r, h, label: shape.value })
+    // 真实外形尺寸（1 unit = 10 mm），不再手写一套缩小版的假尺寸
+    const { r, h } = CELL_SPECS[shape.value]
+    const cell = buildCylindricalCell({
+      format: shape.value,
+      brand: shape.value,
+      voltage: 3.6,
+      capacity: shape.value === '21700' ? 5000 : 3500
+    })
     modelGroup.add(cell)
+
     const wrap = cell.getObjectByName('wrap')
-    const roll = buildTightJellyRoll({ r: r * 0.9, h: h * 0.88 })
+    const roll = buildTightJellyRoll({ r: r * 0.88, h: h * 0.85 })
     roll.position.y = -0.05
     rollMesh = roll
     modelGroup.add(roll)
+
+    // 顶盖组：真实电芯的顶盖盘、正极凸台与泄压阀刻痕属于同一个顶盖件，拆解时一起抬起。
+    // 负极端面留在壳体上（真实拆解是从顶部打开的，不会把底盖一起拎走）。
     capGroupRef = new THREE.Group()
-    for (const nm of ['positiveCap', 'terminal', 'negativeCap']) {
+    for (const nm of ['positiveCap', 'terminal', 'ventMarks']) {
       const o = cell.getObjectByName(nm)
       if (o) { cell.remove(o); capGroupRef.add(o) }
     }
-    const vent = new THREE.Mesh(new THREE.TorusGeometry(r * 0.55, 0.014, 8, 40), new THREE.MeshStandardMaterial({ color: 0x9aa5b8, roughness: 0.45, metalness: 0.85 }))
-    vent.rotation.x = Math.PI / 2
-    vent.position.y = h / 2 + 0.1
-    vent.userData.partId = 'vent'; vent.userData.partLabel = '安全阀'
-    capGroupRef.add(vent)
     modelGroup.add(capGroupRef)
+
     teardownParts = [
-      { obj: wrap, base: wrap.position.clone(), off: new THREE.Vector3(0, 1.4, 0), fadeTo: 0.08, phase: 0 },
-      { obj: capGroupRef, base: capGroupRef.position.clone(), off: new THREE.Vector3(0, 1.7, 0), fadeTo: 1, phase: 1 },
-      { obj: roll, base: roll.position.clone(), off: new THREE.Vector3(0, 0.5, 2.4), fadeTo: 1, phase: 2, fan: true }
+      { obj: wrap, base: wrap.position.clone(), off: new THREE.Vector3(0, 2.4, 0), fadeTo: 0.08, phase: 0 },
+      { obj: capGroupRef, base: capGroupRef.position.clone(), off: new THREE.Vector3(0, 3.2, 0), fadeTo: 1, phase: 1 },
+      { obj: roll, base: roll.position.clone(), off: new THREE.Vector3(0, 0.5, 3.4), fadeTo: 1, phase: 2, fan: true }
     ]
   } else if (shape.value === 'prism') {
     const cell = buildPrismaticCell()
@@ -344,8 +367,8 @@ watch(shape, () => {
   resetTeardown()
   buildModel()
   if (modelGroup) {
-    modelGroup.scale.setScalar(0.72)
-    gsap.to(modelGroup.scale, { x: 0.88, y: 0.88, z: 0.88, duration: 0.7, ease: 'power2.out' })
+    modelGroup.scale.setScalar(0.5)
+    gsap.to(modelGroup.scale, { x: 0.6, y: 0.6, z: 0.6, duration: 0.7, ease: 'power2.out' })
   }
 })
 
@@ -386,8 +409,7 @@ function onSelect(id) {
   const anchor = hs ? new THREE.Vector3(...hs.anchor) : new THREE.Vector3()
   const dir = scene.camera.position.clone().sub(scene.controls.target).normalize()
   const targetPos = anchor.clone().addScaledVector(dir, 4.4)
-  gsap.to(scene.camera.position, { x: targetPos.x, y: targetPos.y, z: targetPos.z, duration: 0.7, ease: 'power2.inOut' })
-  gsap.to(scene.controls.target, { x: anchor.x * 0.6, y: anchor.y * 0.6, z: anchor.z * 0.6, duration: 0.7, ease: 'power2.inOut', onUpdate: () => scene.controls.update() })
+  fly.flyTo([targetPos.x, targetPos.y, targetPos.z], [anchor.x * 0.6, anchor.y * 0.6, anchor.z * 0.6], 0.7)
   for (const d of dimmables) {
     const isSel = d.mesh.userData.partId === id
     d.mat.transparent = true
@@ -401,6 +423,12 @@ function onSelect(id) {
   hotspotSprites.forEach((s) => { s.material.opacity = s.userData.hs.partId === id ? 1 : 0.15 })
 }
 
+/* 相机飞行统一走 src/three/cameraFly.js（实现与坑位说明都在那边）。 */
+const fly = createCameraFly(() => scene)
+
+const HOME_POS = [0, 0.9, 7.2]
+const HOME_TARGET = [0, 0, 0]
+
 function deselect() {
   selected.value = null
   for (const d of dimmables) {
@@ -408,14 +436,32 @@ function deselect() {
     if (d.mat.emissive && d.mat.__baseEmissive) { d.mat.emissive.copy(d.mat.__baseEmissive); d.mat.emissiveIntensity = d.mat.__baseEmissiveI }
   }
   hotspotSprites.forEach((s) => { s.material.opacity = 1 })
-  gsap.to(scene.camera.position, { x: 0, y: 1.6, z: 8.6, duration: 0.7, ease: 'power2.inOut' })
-  gsap.to(scene.controls.target, { x: 0, y: 0, z: 0, duration: 0.7, ease: 'power2.inOut', onUpdate: () => scene.controls.update() })
+  fly.flyTo(HOME_POS, HOME_TARGET, 0.7)
 }
 
+/* 拖拽与点选必须分开：开了旋转/平移后，拖完松手浏览器照样补一个 click。
+   按位移判据过滤 —— 超过 6px 视为"在转视角"，不当作点选部件，否则转一下就误选。 */
+let downXY = null
+function onPointerDown(e) { downXY = [e.clientX, e.clientY] }
+
 function onClick(e) {
+  if (downXY) {
+    const dx = e.clientX - downXY[0]
+    const dy = e.clientY - downXY[1]
+    downXY = null
+    if (dx * dx + dy * dy > 36) return
+  }
   const hit = pickAt(e)
   if (!hit) { if (selected.value) deselect(); return }
   if (hit.partId) onSelect(hit.partId)
+}
+
+/* 重置视角：放开缩放/平移后，用户很容易把自己"转丢"（模型跑出画面或贴到脸上），
+   必须留一个一键回正的退路。 */
+function resetView() {
+  if (!scene) return
+  if (selected.value) { deselect(); return }  // deselect 里已含回正
+  fly.flyTo(HOME_POS, HOME_TARGET, 0.6)
 }
 
 /* 引导线：部件 → 右侧抽屉 */
@@ -477,8 +523,35 @@ watch([chem, chemCompare], () => { radar?.setOption(radarOption()) })
 let onResize = () => {}
 onMounted(async () => {
   await nextTick()
-  scene = createLabScene(threeBox.value, { cameraPos: [0, 1.6, 8.6], fov: 40 })
+  // 取景：拆解条移到舞台外后，画面底部不再被遮，模型可以吃满画幅。
+  // 21700 高 7.0 unit × 基准缩放 0.6 = 4.2 unit；7.2 距离 / fov 40 下约占画幅高度的 8 成。
+  // 圆柱细长，左右两侧天然留白，所以四角的控件（外形切换、尺寸、重置）都不会压到模型。
+  //
+  // 本页是"细看"场景，缩放与平移都打开 —— 与首页展台恰好相反。
+  // 手感靠参数兜底，而不是靠关掉功能：
+  //   zoomSpeed 0.42 → 滚轮一格约 4% 视距，不会一滚到底
+  //   minDistance 3.6 → 能贴近看刻痕/极耳，又不至于穿模（壳体半径仅 0.63）
+  //   rotateSpeed 0.55 / panSpeed 0.72 → 放慢，便于对准细节
+  scene = createLabScene(threeBox.value, {
+    cameraPos: [0, 0.9, 7.2],
+    fov: 40,
+    controls: {
+      enableRotate: true,
+      enableZoom: true,
+      enablePan: true,
+      zoomSpeed: 0.42,
+      rotateSpeed: 0.55,
+      panSpeed: 0.72,
+      screenSpacePanning: true,
+      minDistance: 3.6,
+      maxDistance: 15,
+      minPolarAngle: Math.PI * 0.12,
+      maxPolarAngle: Math.PI * 0.88,
+      target: [0, 0, 0]
+    }
+  })
   buildModel()
+  threeBox.value.addEventListener('pointerdown', onPointerDown)
   threeBox.value.addEventListener('pointermove', onPointerMove)
   threeBox.value.addEventListener('click', onClick)
   radar = initChart(radarBox.value)
@@ -494,6 +567,7 @@ onMounted(async () => {
       if (v >= 100) { v = 100; tdPlaying.value = false }
       tdPercent.value = v
     }
+    fly.step(dt)
     updateGuide()
     scene.render()
   }
@@ -502,6 +576,8 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
+  fly.cancel()
+  threeBox.value?.removeEventListener('pointerdown', onPointerDown)
   threeBox.value?.removeEventListener('pointermove', onPointerMove)
   threeBox.value?.removeEventListener('click', onClick)
   window.removeEventListener('resize', onResize)
@@ -512,33 +588,53 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-.types { display: flex; flex-direction: column; gap: 20px; }
+.types { display: flex; flex-direction: column; gap: 20px;
+  // 首屏高度预算：舞台 + 其下方的拆解控制条（12 gap + 约 38 高）再与右侧展柜对齐，
+  // 矮屏自动压扁，保证「章节标题 + 3D 舞台 + 拆解条 + 右侧展柜」在一屏内完整可见。
+  --stage-h: clamp(360px, calc(100vh - 300px), 530px);
+}
 .head { position: relative;
   .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
 }
-.showcase { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; }
-.stage { position: relative; height: 620px; overflow: hidden; }
+.showcase { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; align-items: start; }
+.stage-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.stage { position: relative; height: var(--stage-h); overflow: hidden; }
 .three-box { position: absolute; inset: 0; cursor: grab; }
 .guide-svg { position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  // ⚠️ width/height 必须有。<svg> 是替换元素，给 position:absolute + inset:0 并不会
+  // 把它撑开 —— 它会退回默认的 300×150 固有尺寸（右/下被"过约束"而忽略）。
+  // 而 updateGuide() 写入的坐标是按舞台实际像素空间算的（x2 能到 780+），
+  // 于是整条"部件 → 抽屉"引导线落在 300×150 视口之外，被 svg 默认的 overflow:hidden 裁掉，
+  // 表现为"选中部件后看不到引导线"。
+  width: 100%; height: 100%;
   .guide-line { stroke: rgba(34, 211, 238, 0.7); stroke-width: 1.2; stroke-dasharray: 5 4; transition: opacity 0.3s; }
   .guide-dot { fill: #22d3ee; filter: drop-shadow(0 0 6px #22d3ee); transition: opacity 0.3s; }
 }
 .shape-row { position: absolute; left: 16px; bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; z-index: 4; }
-.size-tag { position: absolute; right: 16px; top: 14px; font-size: 12px; color: var(--text-2); padding: 6px 12px; z-index: 4; }
+.stage-tools { position: absolute; right: 16px; top: 14px; z-index: 4;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.size-tag { font-size: 12px; color: var(--text-2); padding: 6px 12px; }
+.view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; }
+.view-hint { font-size: 11.5px; color: var(--text-3); letter-spacing: 0.02em; }
+// 拆解控制条：位于舞台下方，是常规文档流的一行，不再遮挡 3D 画面
 .teardown {
-  position: absolute; left: 16px; bottom: 60px; right: 16px; z-index: 4;
-  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-  input[type=range] { flex: 1; }
+  display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+  input[type=range] { flex: 1; min-width: 90px; }
+  // 图标按钮收成方钮。`.icon` 原先只在别的页面定义过 —— scoped 样式跨组件不生效，
+  // 这两个按钮实际吃到的是 .btn-ghost 的通用内边距（8px 18px），
+  // 图标两侧一大圈留白，和紧挨着的滑杆不成一体。
+  .icon { width: 32px; height: 32px; flex: none; justify-content: center; padding: 0; }
   .td-step { font-size: 12px; color: var(--cyan); white-space: nowrap; }
+  .td-caption { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
-.td-caption { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); font-size: 12.5px; color: var(--text-2); padding: 6px 14px; background: rgba(13,18,32,0.7); border-radius: 999px; white-space: nowrap; z-index: 4; }
-.back-btn { position: absolute; right: 16px; bottom: 60px; z-index: 4; }
+.back-btn { position: absolute; right: 16px; bottom: 16px; z-index: 4; }
 
-.drawer { padding: 20px; min-height: 620px; display: flex; flex-direction: column; }
+.drawer { padding: 18px 20px; height: var(--stage-h); display: flex; flex-direction: column; overflow-y: auto; }
 .drawer-idle {
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
   .idle-title { font-size: 13px; letter-spacing: 0.2em; color: var(--blue); margin-bottom: 10px; }
   .idle-line { font-size: 15.5px; color: var(--text-1); line-height: 1.8; margin-bottom: 18px; }
-  .idle-parts { display: flex; flex-direction: column; gap: 8px;
+  .idle-parts { display: flex; flex-direction: column; gap: 11px;
     li { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-2); padding: 8px 12px; border: 1px dashed var(--hairline); border-radius: 8px;
       .hdot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; } } }
 }
@@ -565,11 +661,14 @@ onBeforeUnmount(() => {
   .compare-row { margin-top: 16px; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-3); flex-wrap: wrap;
     .sm { padding: 4px 12px; font-size: 12px; } }
 }
-.radar-box { .radar { height: 340px; }
+.radar-box { .radar { height: 300px; }
   .caliber { margin-top: 8px; font-size: 11.5px; color: var(--text-3); text-align: center; } }
 
 @media (max-width: 960px) {
   .showcase, .chem-body { grid-template-columns: 1fr; }
-  .drawer { min-height: 0; }
+  .stage { height: clamp(340px, 56vh, 440px); }
+  .drawer { height: auto; min-height: 0; overflow: visible; }
+  // 窄屏舞台本来就矮，操作提示会压住模型，收掉
+  .view-hint { display: none; }
 }
 </style>

@@ -50,10 +50,10 @@ const next = computed(() => chapters[idx.value + 1] || null)
   display: flex; align-items: center; gap: 12px;
   min-height: 104px; padding: 14px 20px; text-decoration: none; color: var(--text-1);
   transition: background .2s ease, color .2s ease;
-  &:hover { background: rgba(52,211,153,.05); }
+  &:hover { background: rgba(77,168,255,.05); }
   i { display: block; font-style: normal; font-size: 11.5px; color: var(--text-2); letter-spacing: 0.12em; }
   b { font-size: 14.5px; }
-  .arrow { font-size: 22px; color: var(--green); }
+  .arrow { font-size: 22px; color: var(--blue); }
   &.right { justify-content: flex-end; text-align: right; }
   &.empty { visibility: hidden; }
 }
@@ -61,7 +61,7 @@ const next = computed(() => chapters[idx.value + 1] || null)
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 4px; padding: 18px 26px; text-align: center;
   border-left: 1px solid var(--hairline); border-right: 1px solid var(--hairline);
-  .label { font-size: 10px; letter-spacing: 0.3em; color: var(--green); }
+  .label { font-size: 10px; letter-spacing: 0.3em; color: var(--cyan); }
   p { font-size: 15.5px; font-weight: 600; color: var(--text-1); }
 }
 .project-signature {

@@ -1,7 +1,14 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
+import gsap from 'gsap'
 import App from './App.vue'
 import './styles/base.scss'
+
+// gsap 默认开启 lagSmoothing：一旦 rAF 间隔超过 500ms（页面被节流、切到后台、
+// 或 headless 截图），它会把每帧的时间增量强行钳到 33ms，动画于是推进得极慢，
+// 看上去就是"点了没反应"或"入场动画卡在 opacity: 0 的半截状态"。
+// 关掉它，让 gsap 老老实实按真实时间推进。
+gsap.ticker.lagSmoothing(0)
 
 import HomeView from './views/HomeView.vue'
 

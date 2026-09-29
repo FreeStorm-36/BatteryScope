@@ -4,116 +4,260 @@ import * as THREE from 'three'
 import { PALETTE, pool } from './labScene.js'
 
 /**
- * 圆柱电芯外壳（18650 / 21700 通用，单位约 1:10 比例）
- * 返回 Group：shellBody / positiveCap / negativeCap / wrap（标签热缩膜）
+ * 圆柱电芯外壳 —— 按真实 18650 / 21700 尺寸比例建模
+ *
+ * 单位制：1 unit = 10 mm。真实 21700 = Φ21 × 70 mm → r 1.05 / h 7.00；
+ * 18650 = Φ18 × 65 mm → r 0.90 / h 6.50。
+ *
+ * 旧实现用 r 1.05 / h 3.5，高径比只有 1.69:1，而真实规格是 21700 的 3.33:1、
+ * 18650 的 3.61:1 —— 等于把电池建成了矮胖罐子，这是"看起来不像真电池"的根本原因。
+ * 本版按真实比例重建，并补齐真实结构：正极凸台、顶盖、肩部收口、镀镍钢壳、
+ * 热缩膜标签、泄压阀刻痕、底部环槽。
  */
-export function buildCylindricalCell({ r = 1.05, h = 3.5, label = '21700' } = {}) {
+export const CELL_SPECS = {
+  // r 壳半径 / h 总高 / topR 肩部收口半径 / capR 正极凸台半径 / capH 凸台高
+  // shoulderH 肩高 / plateH 顶盖厚 / bottomH 底盖厚（单位均为 10 mm 的倍数）
+  '18650': { r: 0.90, h: 6.50, topR: 0.70, capR: 0.275, capH: 0.11, shoulderH: 0.20, plateH: 0.06, bottomH: 0.085 },
+  '21700': { r: 1.05, h: 7.00, topR: 0.80, capR: 0.300, capH: 0.12, shoulderH: 0.22, plateH: 0.07, bottomH: 0.095 }
+}
+
+export function buildCylindricalCell({
+  format = '21700',
+  brand = 'BS-01',
+  voltage = 3.6,
+  capacity = 5000
+} = {}) {
+  const spec = CELL_SPECS[format] || CELL_SPECS['21700']
+  const { r, h, topR, capR, capH, shoulderH, plateH, bottomH } = spec
   const g = new THREE.Group()
 
-  const shellMat = new THREE.MeshStandardMaterial({
-    color: PALETTE.shell, roughness: 0.32, metalness: 0.85,
-    emissive: 0x0c1626, emissiveIntensity: 0.5
-  })
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 48, 1, false), shellMat)
+  // 镀镍钢：银白微灰的高金属度表面。真实电芯壳体是抛光镀镍钢，不是深蓝塑料 ——
+  // 旧版把壳设成 0x2a3448 深蓝，是"不像真电池"的第二个原因。
+  const steel = new THREE.MeshStandardMaterial({ color: 0xa9b4c3, roughness: 0.3, metalness: 0.92 })
+  const steelBright = new THREE.MeshStandardMaterial({ color: 0xc6d0dd, roughness: 0.22, metalness: 0.95 })
+  const steelDark = new THREE.MeshStandardMaterial({ color: 0x8d97a6, roughness: 0.42, metalness: 0.85 })
+
+  // 几何基准（模型几何中心位于组原点，y ∈ [-h/2, h/2]）
+  const capTop = h / 2
+  const capBottom = capTop - capH
+  const plateBottom = capBottom - plateH
+  const shoulderBottom = plateBottom - shoulderH
+  const bodyTop = shoulderBottom
+  const bodyBottom = -h / 2 + bottomH
+  const bodyH = bodyTop - bodyBottom
+
+  // 1) 管身
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r, bodyH, 64, 1, true), steel)
+  body.position.y = (bodyTop + bodyBottom) / 2
   body.name = 'shellBody'
   g.add(body)
 
-  const capMat = new THREE.MeshStandardMaterial({ color: PALETTE.capMetal, roughness: 0.25, metalness: 0.95 })
-  const posCap = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.985, r * 0.985, 0.09, 48), capMat)
-  posCap.position.y = h / 2 + 0.045
-  posCap.name = 'positiveCap'
-  g.add(posCap)
+  // 2) 肩部收口：真实电芯顶部的斜肩，圆柱过渡到顶盖
+  const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(topR, r, shoulderH, 64, 1, true), steel)
+  shoulder.position.y = shoulderBottom + shoulderH / 2
+  shoulder.name = 'shoulder'
+  g.add(shoulder)
 
-  // 正极端子（凸起小圆盘）
-  const terminal = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.36, r * 0.36, 0.1, 32), capMat)
-  terminal.position.y = h / 2 + 0.12
+  // 3) 顶盖盘
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(topR, topR, plateH, 64), steelBright)
+  plate.position.y = plateBottom + plateH / 2
+  plate.name = 'positiveCap'
+  g.add(plate)
+
+  // 4) 正极凸台（真实尺寸：18650 为 Φ5.5 mm，21700 为 Φ6.0 mm）
+  const terminal = new THREE.Mesh(new THREE.CylinderGeometry(capR, capR * 1.08, capH, 40), steelBright)
+  terminal.position.y = capBottom + capH / 2
   terminal.name = 'terminal'
   g.add(terminal)
 
-  const negCap = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.985, r * 0.985, 0.09, 48), capMat)
-  negCap.position.y = -h / 2 - 0.045
-  negCap.name = 'negativeCap'
-  g.add(negCap)
+  // 5) 泄压阀刻痕：顶盖上三条径向刻线。真实电芯内压异常时从此处定向撕开泄压。
+  const markMat = new THREE.MeshStandardMaterial({ color: 0x59626f, roughness: 0.6, metalness: 0.5 })
+  const vent = new THREE.Group()
+  vent.name = 'ventMarks'
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2
+    const len = (topR - capR) * 1.5
+    const mark = new THREE.Mesh(new THREE.BoxGeometry(len, 0.008, 0.016), markMat)
+    const mid = capR + len / 2
+    mark.position.set(Math.cos(a) * mid, plateBottom + plateH + 0.002, Math.sin(a) * mid)
+    mark.rotation.y = -a
+    vent.add(mark)
+  }
+  g.add(vent)
 
-  // 顶部防爆阀刻痕环
-  const ventRing = new THREE.Mesh(
-    new THREE.TorusGeometry(r * 0.55, 0.012, 8, 40),
-    new THREE.MeshStandardMaterial({ color: 0x8a94a8, roughness: 0.5, metalness: 0.8 })
-  )
-  ventRing.rotation.x = Math.PI / 2
-  ventRing.position.y = h / 2 + 0.095
-  g.add(ventRing)
+  // 6) 负极端面 + 底部环形凹槽（真实电芯底部的一圈压痕）
+  const bottom = new THREE.Mesh(new THREE.CylinderGeometry(r, r, bottomH, 64), steelDark)
+  bottom.position.y = -h / 2 + bottomH / 2
+  bottom.name = 'negativeCap'
+  g.add(bottom)
 
-  // 热缩膜标签（略大于壳，带型号文字 canvas 纹理）
-  const labelTex = makeLabelTexture(label, r, h)
+  const groove = new THREE.Mesh(new THREE.TorusGeometry(r * 0.62, 0.014, 8, 48), steelDark)
+  groove.rotation.x = Math.PI / 2
+  groove.position.y = -h / 2 + bottomH + 0.004
+  groove.name = 'bottomGroove'
+  g.add(groove)
+
+  // 7) 热缩膜标签：覆盖管身中段，上下各裸露 1.5 mm 金属
+  const wrapMargin = 0.15
+  const wrapH = bodyH - wrapMargin * 2
+  const tex = makeWrapTexture({ model: format, brand, voltage, capacity })
   const wrap = new THREE.Mesh(
-    new THREE.CylinderGeometry(r * 1.005, r * 1.005, h * 0.86, 48, 1, true),
+    new THREE.CylinderGeometry(r * 1.012, r * 1.012, wrapH, 64, 1, true),
     new THREE.MeshStandardMaterial({
-      map: labelTex, roughness: 0.6, metalness: 0.1, transparent: true, opacity: 0.96,
-      emissive: 0xffffff, emissiveMap: labelTex, emissiveIntensity: 0.22 // 标签微光背照
+      map: tex, roughness: 0.62, metalness: 0.06,
+      emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.14 // 标签微光背照，深色场景里保持可读
     })
   )
+  wrap.position.y = bodyBottom + wrapMargin + wrapH / 2
   wrap.name = 'wrap'
   g.add(wrap)
 
   g.userData.radius = r
   g.userData.height = h
+  g.userData.spec = spec
+  g.userData.format = format
   return g
 }
 
-function makeLabelTexture(label, r, h) {
+/**
+ * 热缩膜标签纹理（圆柱展开图：x 轴 = 周长，y 轴 = 轴向）
+ * 层级参照真实消费级 18650/21700 电芯标签：品牌 / 型号 / 电压 / 容量 / 能量 / 极性 / 警示语。
+ */
+function makeWrapTexture({ model, brand, voltage, capacity }) {
   const c = document.createElement('canvas')
-  c.width = 1024; c.height = 256
+  c.width = 1024
+  c.height = 256
   const ctx = c.getContext('2d')
+
+  // 膜底色：深蓝渐变，贴合站点主色，同时保留热缩膜的轻微光泽变化
   const grad = ctx.createLinearGradient(0, 0, 0, 256)
-  grad.addColorStop(0, '#22385f'); grad.addColorStop(1, '#14223c')
+  grad.addColorStop(0, '#1d3760')
+  grad.addColorStop(0.5, '#172b4d')
+  grad.addColorStop(1, '#122240')
   ctx.fillStyle = grad
   ctx.fillRect(0, 0, 1024, 256)
-  // 细线标尺装饰
-  ctx.strokeStyle = 'rgba(77,168,255,0.25)'; ctx.lineWidth = 2
-  for (let x = 40; x < 1024; x += 60) { ctx.beginPath(); ctx.moveTo(x, 16); ctx.lineTo(x, 40); ctx.stroke() }
-  ctx.fillStyle = '#dbeeff'
-  ctx.font = 'bold 92px Consolas, monospace'
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-  ctx.fillText(label, 512, 128)
-  ctx.fillStyle = 'rgba(139,152,176,0.9)'
-  ctx.font = '36px Consolas, monospace'
-  ctx.fillText('BS-01 · CONCEPT CELL', 512, 210)
+
+  // 上下边缘银色收边：热缩膜压在金属壳上的反光
+  const edge = ctx.createLinearGradient(0, 0, 0, 256)
+  edge.addColorStop(0, 'rgba(205,220,240,0.45)')
+  edge.addColorStop(0.05, 'rgba(205,220,240,0)')
+  edge.addColorStop(0.95, 'rgba(205,220,240,0)')
+  edge.addColorStop(1, 'rgba(205,220,240,0.45)')
+  ctx.fillStyle = edge
+  ctx.fillRect(0, 0, 1024, 256)
+
+  ctx.textBaseline = 'middle'
+
+  // 同一组信息沿圆周印两处，且各自"骑"在 UV 接缝两侧：
+  // 圆柱只有约 40% 的弧面朝向镜头，块边界若正好落在正面，两块都会被切半、都读不出来。
+  // 画三次（-230 / 282 / 794）让接缝恰好处在第一块的正中央，正面永远是一块完整信息。
+  // 块宽 380/1024 ≈ 134° < 约 144° 的可见弧面 —— 保证整块信息能同时落在视野内
+  const BLOCK_W = 380
+  const blocks = [-190, 322, 834].map((x0) => ({ x0, w: BLOCK_W }))
+  for (const b of blocks) {
+    // 品牌 + 型号命名（真实型号即"直径+高度"）
+    ctx.textAlign = 'left'
+    ctx.fillStyle = '#dce9fb'
+    ctx.font = 'bold 64px Consolas, monospace'
+    ctx.fillText(brand, b.x0 + 42, 100)
+    ctx.fillStyle = 'rgba(152,182,216,0.85)'
+    ctx.font = '28px Consolas, monospace'
+    ctx.fillText(`${model} · Li-ion`, b.x0 + 44, 158)
+
+    // 电压 / 容量 / 能量三行规格
+    ctx.textAlign = 'right'
+    ctx.fillStyle = '#a5dcf2'
+    ctx.font = 'bold 40px Consolas, monospace'
+    ctx.fillText(`${voltage.toFixed(1)}V`, b.x0 + b.w - 42, 74)
+    ctx.fillStyle = '#c3d6ee'
+    ctx.font = '30px Consolas, monospace'
+    ctx.fillText(`${capacity} mAh`, b.x0 + b.w - 42, 126)
+    ctx.fillStyle = 'rgba(152,182,216,0.8)'
+    ctx.font = '24px Consolas, monospace'
+    ctx.fillText(`${((voltage * capacity) / 1000).toFixed(1)} Wh`, b.x0 + b.w - 42, 170)
+
+    // 底部警示条
+    ctx.textAlign = 'center'
+    ctx.fillStyle = 'rgba(245,158,11,0.14)'
+    ctx.fillRect(b.x0 + 42, 212, b.w - 84, 26)
+    ctx.fillStyle = 'rgba(245,192,112,0.92)'
+    ctx.font = '18px Consolas, monospace'
+    ctx.fillText('DO NOT SHORT · HEAT · PUNCTURE', b.x0 + b.w / 2, 226)
+  }
+
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
+  tex.anisotropy = 4
   return tex
 }
 
 /**
- * 卷芯（jelly-roll 螺旋）—— 圆柱电芯内部
- * 用一圈圈交替的薄板近似螺旋卷绕结构
+ * 卷绕带材几何体 —— 一段"极片 / 隔膜"
+ *
+ * 真实卷芯不是管子，而是一张张薄片卷起来的：极片沿螺旋方向延伸（弧长），
+ * 在竖直方向有整个电芯的高度（h），径向只有几十微米厚（radOut − radIn）。
+ * 所以横截面是"高 h × 厚 t"的竖长矩形，这里直接按 4 个侧面拉出这条带材。
  */
-export function buildJellyRoll({ r = 1.0, h = 3.1, turns = 5 } = {}) {
-  const g = new THREE.Group()
-  const cathodeMat = new THREE.MeshStandardMaterial({ color: PALETTE.cathode, roughness: 0.55, metalness: 0.15, emissive: 0x1a1545, emissiveIntensity: 0.5 })
-  const anodeMat = new THREE.MeshStandardMaterial({ color: PALETTE.anode, roughness: 0.6, metalness: 0.2 })
-  const sepMat = new THREE.MeshStandardMaterial({ color: PALETTE.separator, roughness: 0.85, metalness: 0.0, transparent: true, opacity: 0.5 })
-
-  const thickness = r / (turns * 2 + 1)
-  for (let i = 0; i < turns * 2; i++) {
-    const mat = i % 2 === 0 ? cathodeMat : anodeMat
-    const rad = thickness * (i + 1)
-    const arc = (i + 1) * Math.PI * 0.9
-    const pts = []
-    for (let a = 0; a <= arc; a += 0.12) pts.push(new THREE.Vector2(Math.cos(a) * rad, Math.sin(a) * rad))
-    const curve = new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(p.x, 0, p.y)))
-    const geo = new THREE.TubeGeometry(curve, 48, thickness * 0.42, 6, false)
-    const mesh = new THREE.Mesh(geo, i % 3 === 2 ? sepMat : mat)
-    g.add(mesh)
+function ribbonArcGeo({ radIn, radOut, a0, a1, h, seg = 44 }) {
+  const pos = []
+  const idx = []
+  const half = h / 2
+  for (let i = 0; i <= seg; i++) {
+    const a = a0 + (a1 - a0) * (i / seg)
+    const c = Math.cos(a), s = Math.sin(a)
+    // 每个角度采样点 4 个顶点：内下 / 外下 / 外上 / 内上
+    pos.push(radIn * c, -half, radIn * s)
+    pos.push(radOut * c, -half, radOut * s)
+    pos.push(radOut * c, half, radOut * s)
+    pos.push(radIn * c, half, radIn * s)
   }
-  // 中心轴
-  const core = new THREE.Mesh(
-    new THREE.CylinderGeometry(thickness * 1.4, thickness * 1.4, h, 16),
-    sepMat
-  )
-  g.add(core)
+  const EDGES = [[0, 1], [1, 2], [2, 3], [3, 0]]
+  for (let i = 0; i < seg; i++) {
+    for (const [p, q] of EDGES) {
+      const a = i * 4 + p, b = i * 4 + q, c2 = (i + 1) * 4 + q, d = (i + 1) * 4 + p
+      idx.push(a, b, c2, a, c2, d)
+    }
+  }
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  geo.setIndex(idx)
+  geo.computeVertexNormals()
+  return geo
+}
+
+/** 卷芯材质：双面，避免薄带材从内侧被剔除 */
+function jellyRollMats() {
+  const shell = { side: THREE.DoubleSide }
+  return {
+    cathode: new THREE.MeshStandardMaterial({ ...shell, color: PALETTE.cathode, roughness: 0.62, metalness: 0.12 }),
+    anode: new THREE.MeshStandardMaterial({ ...shell, color: PALETTE.anode, roughness: 0.68, metalness: 0.16 }),
+    separator: new THREE.MeshStandardMaterial({ ...shell, color: PALETTE.separator, roughness: 0.9, metalness: 0, transparent: true, opacity: 0.42 }),
+    insulator: () => new THREE.MeshStandardMaterial({ color: 0x223050, roughness: 0.9 })
+  }
+}
+
+/**
+ * 卷芯（jelly-roll）—— 圆柱电芯内部
+ *
+ * 按真实叠层顺序卷绕：正极片 → 隔膜 → 负极片 → 隔膜，逐层向外推进。
+ * 每层的起始角相对上一层推进一个固定角度，因为真实卷绕就是连续螺旋，
+ * 而不是一圈圈同心圆。留出间隙是为了教学时能看清分层（X 光风格）。
+ */
+export function buildJellyRoll({ r = 1.0, h = 3.1, turns = 6 } = {}) {
+  const g = new THREE.Group()
+  const M = jellyRollMats()
+  const layerGap = (r * 0.9 - r * 0.12) / (turns * 4)
+  const layerT = layerGap * 0.74
+  const H = h * 0.96
+  for (let i = 0; i < turns * 4; i++) {
+    const radIn = r * 0.12 + i * layerGap
+    const mat = i % 4 === 0 ? M.cathode : i % 4 === 2 ? M.anode : M.separator
+    const a0 = i * Math.PI * 0.42
+    const geo = ribbonArcGeo({ radIn, radOut: radIn + layerT, a0, a1: a0 + Math.PI * 1.45, h: H })
+    g.add(new THREE.Mesh(geo, mat))
+  }
   // 上下绝缘垫
-  const insMat = new THREE.MeshStandardMaterial({ color: 0x223050, roughness: 0.9 })
+  const insMat = M.insulator()
   for (const y of [h / 2 - 0.03, -h / 2 + 0.03]) {
     const disc = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.98, r * 0.98, 0.05, 40), insMat)
     disc.position.y = y
@@ -123,16 +267,20 @@ export function buildJellyRoll({ r = 1.0, h = 3.1, turns = 5 } = {}) {
 }
 
 /**
- * 极耳 + 集流体（爆炸拆解用小零件）
+ * 极耳 + 集流体
+ *
+ * 真实结构：正极铝极耳从卷芯顶端引出、焊到顶盖；负极铜极耳从卷芯底端引出、焊到钢壳。
+ * 两条极耳因此分处上下两端，且是竖直薄片，而不是躺在卷芯顶上的横条。
  */
-export function buildTabs() {
+export function buildTabs({ r = 1.0, h = 6.6, len = 1.1 } = {}) {
   const g = new THREE.Group()
-  const alMat = new THREE.MeshStandardMaterial({ color: PALETTE.aluminium, roughness: 0.35, metalness: 0.9 })
-  const cuMat = new THREE.MeshStandardMaterial({ color: PALETTE.copper, roughness: 0.35, metalness: 0.9 })
-  const al = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.22), alMat)
-  al.position.set(0.3, 0.18, 0)
-  const cu = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.22), cuMat)
-  cu.position.set(-0.3, -0.18, 0)
+  const alMat = new THREE.MeshStandardMaterial({ color: PALETTE.aluminium, roughness: 0.32, metalness: 0.95 })
+  const cuMat = new THREE.MeshStandardMaterial({ color: PALETTE.copper, roughness: 0.34, metalness: 0.95 })
+  const w = r * 0.4, th = 0.028
+  const al = new THREE.Mesh(new THREE.BoxGeometry(w, len, th), alMat)
+  al.position.set(r * 0.52, h / 2 + len / 2, 0)
+  const cu = new THREE.Mesh(new THREE.BoxGeometry(w, len, th), cuMat)
+  cu.position.set(-r * 0.52, -h / 2 - len / 2, 0)
   g.add(al, cu)
   return g
 }
@@ -340,38 +488,33 @@ export function buildPouchCell({ w = 2.7, h = 3.5, t = 0.42 } = {}) {
 /**
  * 紧密卷绕卷芯（V3：正极片—隔膜—负极片 交替密绕，替代粗管螺旋）
  */
-export function buildTightJellyRoll({ r = 1.0, h = 3.1, turns = 9 } = {}) {
+export function buildTightJellyRoll({ r = 1.0, h = 3.1, turns = 6 } = {}) {
   const g = new THREE.Group()
-  const cathodeMat = MATS.cathode()
-  const anodeMat = MATS.anode()
-  const sepMat = MATS.separator()
-  const thickness = (r * 0.92) / (turns * 2)
-  for (let i = 0; i < turns * 2; i++) {
-    const mat = i % 2 === 0 ? cathodeMat : anodeMat
-    const rad = thickness * (i + 1)
-    const arc = (i + 1) * Math.PI * 1.05
-    const pts = []
-    for (let a = 0; a <= arc; a += 0.1) pts.push(new THREE.Vector3(Math.cos(a) * rad, 0, Math.sin(a) * rad))
-    const curve = new THREE.CatmullRomCurve3(pts)
-    const geo = new THREE.TubeGeometry(curve, 64, thickness * 0.38, 5, false)
-    const mesh = new THREE.Mesh(geo, i % 4 === 2 ? sepMat : mat)
-    g.add(mesh)
+  const M = jellyRollMats()
+  const layers = turns * 4                  // 正极 / 隔膜 / 负极 / 隔膜 为一组
+  const layerGap = (r * 0.88 - r * 0.1) / layers
+  const layerT = layerGap * 0.86            // 层间只留很窄的缝：这是"紧密卷绕"版
+  const H = h * 0.98
+  for (let i = 0; i < layers; i++) {
+    const radIn = r * 0.1 + i * layerGap
+    const mat = i % 4 === 0 ? M.cathode : i % 4 === 2 ? M.anode : M.separator
+    const a0 = i * Math.PI * 0.36
+    const geo = ribbonArcGeo({ radIn, radOut: radIn + layerT, a0, a1: a0 + Math.PI * 1.62, h: H, seg: 56 })
+    g.add(new THREE.Mesh(geo, mat))
   }
-  // 中心孔（卷针轴心留空）
+  // 中心卷针孔
   const holeRing = new THREE.Mesh(
-    new THREE.TorusGeometry(thickness * 1.1, thickness * 0.5, 8, 24),
-    sepMat
+    new THREE.TorusGeometry(r * 0.1, r * 0.022, 8, 28),
+    M.separator
   )
   holeRing.rotation.x = Math.PI / 2
   g.add(holeRing)
-  // 极耳（从卷芯顶部引出）
-  const tabs = buildTabs()
-  tabs.position.y = h / 2 - 0.1
-  g.add(tabs)
+  // 极耳：正极铝在顶端、负极铜在底端（真实引出方式）
+  g.add(buildTabs({ r, h, len: Math.max(0.55, h * 0.16) }))
   // 上下绝缘垫
-  const insMat = MATS.insulator()
+  const insMat = M.insulator()
   for (const y of [h / 2 - 0.03, -h / 2 + 0.03]) {
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.96, r * 0.96, 0.05, 40), insMat)
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.97, r * 0.97, 0.05, 40), insMat)
     disc.position.y = y
     g.add(disc)
   }

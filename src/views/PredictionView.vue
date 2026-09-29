@@ -19,7 +19,7 @@
           <span v-for="(h, n) in sparkBars" :key="n" class="s-bar" :style="{ height: h + '%' }"></span>
           <span class="q-cut" title="80 次记录处截断"></span>
         </div>
-        <p class="num q-note">前 80 次放电容量记录 · 之后未知</p>
+        <p class="num q-note">前 80 次放电容量记录（NASA PCoE B0005 实测） · 之后未知</p>
       </div>
     </div>
 
@@ -90,18 +90,19 @@
               <p>{{ curD.desc }}</p>
               <div class="mini-viz">
                 <div v-if="pickD === 'cnn'" class="viz-cnn">
-                  <div class="wave"><span v-for="n in 40" :key="n" class="w-bar" :style="{ height: (18 + 26 * Math.abs(Math.sin(n / 4.5))) + '%' }"></span>
+                  <div class="wave"><span v-for="n in 40" :key="n" class="w-bar" :style="{ height: waveH(n) + '%' }"></span>
                     <span class="conv-win" :style="{ left: convPos + '%' }"></span>
                   </div>
-                  <p class="viz-label num">卷积窗口沿充电电压曲线滑动 → 提取局部形状与拐点（示意）</p>
+                  <p class="viz-label num">卷积窗口沿充电电压曲线滑动 → 提取局部形状与拐点</p>
+                  <p class="viz-sub">波形按 1C 恒流—恒压充电的真实形态绘制：恒流段电压随 SOC 上升（两端陡、中段平），到达 4.2 V 后转恒压保持</p>
                 </div>
                 <div v-else-if="pickD === 'gru'" class="viz-gru">
                   <span v-for="n in 14" :key="n" class="g-dot" :class="{ lit: n <= gruLit }">{{ n * 6 }}</span>
                   <p class="viz-label">循环依次连入 → 学习退化随时间的演化规律（示意）</p>
                 </div>
                 <div v-else-if="pickD === 'attention'" class="viz-att">
-                  <span v-for="(w, n) in attWeights" :key="n" class="a-cell" :style="{ opacity: 0.25 + w * 0.75, background: w > 0.12 ? '#f59e0b' : '#4da8ff' }" :title="`Cycle ${n * 6 + 1} · weight ${w.toFixed(2)}`"></span>
-                  <p class="viz-label num">Attention 权重热力条：自动关注更重要的历史循环（示意）</p>
+                  <span v-for="(w, n) in attWeights" :key="n" class="a-cell" :style="{ opacity: 0.25 + w * 0.75, background: w > 0.5 ? '#f59e0b' : '#4da8ff' }" :title="attLabel(n)"></span>
+                  <p class="viz-label num">各历史区间的实测容量降幅（NASA PCoE B0005 前 80 次记录）：降幅大的区间退化信息更丰富，注意力机制会更多关注它们</p>
                 </div>
                 <div v-else-if="pickD === 'multi'" class="viz-multi">
                   <svg viewBox="0 0 300 90">
@@ -164,7 +165,10 @@
       <div class="stage-right">
         <h4>方法权衡地图</h4>
         <div ref="chartTrade" class="trade-chart"></div>
-        <p class="trade-note">没有"一定最好"的方法——数据条件、机理信息、计算成本和验证目标会共同决定方案。</p>
+        <p class="trade-note">
+          没有"一定最好"的方法——数据条件、机理信息、计算成本和验证目标会共同决定方案。
+          <b class="num">坐标位置为定性示意，用相对关系表达路线差异，不是量化评分。</b>
+        </p>
       </div>
     </div>
 
@@ -185,6 +189,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { initChart } from '../services/charts.js'
+import { loadBattery } from '../data/index.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
 import DataBadge from '../components/DataBadge.vue'
 
@@ -197,8 +202,54 @@ let chart = null, convTimer = null, gruTimer = null
 
 const convPos = ref(0)
 const gruLit = ref(1)
-const attWeights = Array.from({ length: 14 }, (_, i) => +(0.02 + Math.abs(Math.sin(i * 1.7)) * (i === 12 ? 0.6 : 0.14)).toFixed(2))
-const sparkBars = Array.from({ length: 40 }, (_, i) => 30 + 55 * Math.exp(-i / 26) + (i % 5) * 1.6)
+
+/* ── CNN 示意波形：按 1C 恒流—恒压（CC-CV）充电电压曲线的真实形态绘制 ──
+   锂离子充电电压 = 开路电压 OCV(SOC) + 内阻压降（恒流段近似常量）。
+   NMC 的 OCV-SOC 曲线两端陡、中段平，所以恒流段电压呈"快升—平台—快升"的 S 形；
+   电压触及 4.2 V 后转入恒压段，电压保持不变（这与 NASA 元数据中的充电协议一致：
+   1.5 A 恒流充至 4.2 V，再恒压至 20 mA 截止）。 */
+function invSmoothstep(x) {
+  // smoothstep 的反函数：两端变化快、中段平，正好对应 OCV-SOC 的形态
+  const t = Math.max(0, Math.min(1, x))
+  return 0.5 - Math.sin(Math.asin(1 - 2 * t) / 3)
+}
+function waveH(n) {
+  const t = (n - 1) / 39                 // 40 根柱代表整段充电过程
+  const v = t <= 0.6
+    ? 3.0 + 1.2 * invSmoothstep(t / 0.6) // 恒流段 3.0 V → 4.2 V
+    : 4.2                                // 恒压段保持 4.2 V
+  return +(14 + ((v - 2.95) / (4.25 - 2.95)) * 36).toFixed(2)
+}
+
+/* ── 真实输入数据 ──
+   本页固定问题是"B0005 完成前 80 次有效放电后剩余寿命还有多长"，
+   所以缩略图与历史区间分布全部直接由 NASA PCoE B0005 实测记录算出，
+   不再使用形状近似的经验公式（旧版这里用的是 exp(-i/26) 生成的假曲线）。 */
+const INPUT_N = 80
+const inputCycles = loadBattery('B0005').cycles.filter((c) => c.cycle <= INPUT_N).slice(0, INPUT_N)
+const capAll = loadBattery('B0005').cycles.map((c) => c.capacity)
+const capHi = Math.max(...capAll)
+const capLo = Math.min(...capAll)
+
+// 前 80 次放电容量缩略图：按全序列容量范围归一化，让"确实在下降"这件事真实可见
+const sparkBars = inputCycles.map((c) => +(((c.capacity - capLo) / (capHi - capLo)) * 100).toFixed(2))
+
+// 14 个历史区间的实测容量降幅。Attention 机制会更多关注退化信息丰富的区间，
+// 这里用真实降幅表达这件事，而不是编一组权重数值出来。
+const SEG = 14
+const segPer = Math.ceil(inputCycles.length / SEG)
+const segDrop = Array.from({ length: SEG }, (_, i) => {
+  const a = inputCycles[Math.min(i * segPer, inputCycles.length - 1)].capacity
+  const b = inputCycles[Math.min((i + 1) * segPer, inputCycles.length - 1)].capacity
+  return Math.max(0, +(a - b).toFixed(4))
+})
+const dropMax = Math.max(...segDrop) || 1
+const attWeights = segDrop.map((v) => +(v / dropMax).toFixed(3))
+const attLabel = (n) => {
+  const from = inputCycles[Math.min(n * segPer, inputCycles.length - 1)].cycle
+  const to = inputCycles[Math.min((n + 1) * segPer, inputCycles.length - 1)].cycle
+  return `循环 ${from}→${to} 的实测容量降幅 ${segDrop[n].toFixed(4)} Ah（相对最大值 ${(attWeights[n] * 100).toFixed(0)}%）`
+}
 
 const routes = [
   {
@@ -242,6 +293,8 @@ const curP = computed(() => physicsModules.find((m) => m.key === pickP.value))
 const curD = computed(() => dataModules.find((m) => m.key === pickD.value))
 
 // 权衡地图：数据需求(x) vs 可解释性(y)
+// 三个坐标点是本页给出的"定性示意"位置，用于表达三条路线的相对差异，
+// 并非任何模型评测出来的量化得分——下方 trade-note 已常驻标注该口径。
 function drawTrade() {
   if (!chart) return
   const pts = { physics: [45, 88], data: [86, 30], fusion: [62, 66] }
@@ -313,7 +366,8 @@ onBeforeUnmount(() => {
     i { font-style: normal; display: block; font-size: 11px; color: var(--blue); letter-spacing: 0.2em; margin-bottom: 4px; }
     b { font-size: 12.5px; font-weight: 500; line-height: 1.5; } }
   .io-arrow { align-self: center; color: var(--blue); font-size: 18px; } }
-.card-panel { background: rgba(20,27,46,0.6); border: 1px solid var(--hairline); border-radius: 10px; }
+// .card-panel 已提到 base.scss（全局），此处不再重复定义：它跨组件共用，
+// 写在 scoped 里会让别的页面拿到一个"空壳类名"。
 .inner-zone { margin-top: 16px;
   .zone-title { font-size: 13px; color: var(--text-1); margin-bottom: 9px; }
   .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; } }
@@ -325,6 +379,7 @@ onBeforeUnmount(() => {
 .note { margin-top: 12px; font-size: 12.5px; color: var(--text-2); line-height: 1.8; border-left: 2px solid var(--hairline-strong); padding-left: 12px; }
 .mini-viz { margin-top: 12px; }
 .viz-label { font-size: 11.5px; color: var(--text-3); margin-top: 8px; }
+.viz-sub { font-size: 10.5px; color: var(--text-3); opacity: 0.78; margin-top: 5px; line-height: 1.6; }
 .viz-cnn { .wave { position: relative; display: flex; align-items: flex-end; gap: 2px; height: 54px; padding: 0 6px;
     .w-bar { flex: 1; background: linear-gradient(180deg, var(--blue), #1d4ed8); border-radius: 2px 2px 0 0; opacity: 0.75; }
     .conv-win { position: absolute; top: 0; bottom: 0; width: 12%; border: 2px solid var(--amber); border-radius: 6px; box-shadow: 0 0 14px rgba(245,158,11,0.4); transition: left 0.12s linear; background: rgba(245,158,11,0.08); } } }
@@ -336,7 +391,7 @@ onBeforeUnmount(() => {
 .viz-multi svg, .viz-bayes svg { width: 100%; height: auto; background: rgba(13,18,32,0.5); border-radius: 8px; }
 // λ 滑块
 .lambda-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 12px; color: var(--text-2);
-  input[type='range'] { flex: 1; accent-color: var(--green); } }
+  input[type='range'] { flex: 1; accent-color: var(--blue); } }
 .balance { display: flex; align-items: flex-end; gap: 14px;
   .scale-side { flex: 1; text-align: center; p { font-size: 13px; margin-bottom: 8px; } }
   .beam { width: 3px; height: 74px; background: linear-gradient(180deg, var(--hairline-strong), transparent); border-radius: 2px; }

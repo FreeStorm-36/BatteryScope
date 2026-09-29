@@ -224,13 +224,25 @@ onBeforeUnmount(() => { reset(); window.removeEventListener('resize', onChartRes
 .steps { display: flex; flex-direction: column; gap: 10px; }
 .step {
   display: flex; align-items: flex-start; gap: 14px; padding: 14px 18px; cursor: pointer;
-  opacity: 0.45; transition: all 0.3s ease;
-  &.current { opacity: 1; border-color: rgba(77, 168, 255, 0.5); box-shadow: var(--glow-blue); }
-  &.active { opacity: 1; }
-  .step-num { font-size: 22px; color: var(--blue); }
+  /* 未激活步骤原先整卡 opacity: 0.45。但这里本来就缺一层卡片底色
+     （card-panel 当初只定义在 PredictionView 的 scoped 样式里，跨组件不生效），
+     整卡再降透明度，等于把文字直接融进深色页面 —— 未点"开始预测"时六个步骤
+     全在未激活态，左栏看上去就是一大片空白。
+     改成：卡片本体始终可见，用"虚线边框 + 次级文字色"表达"还没轮到"，
+     用蓝色实线 + 提亮文字表达"已走完 / 正在走"。 */
+  border-style: dashed;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+  .step-num { font-size: 22px; color: var(--text-3); }
   .step-body { flex: 1;
-    b { font-size: 15px; }
+    b { font-size: 15px; color: var(--text-2); }
   }
+  &.active {
+    border-style: solid; border-color: rgba(77, 168, 255, 0.35);
+    .step-num { color: var(--blue); }
+    .step-body b { color: var(--text-1); }
+  }
+  &.current { border-color: rgba(77, 168, 255, 0.5); box-shadow: var(--glow-blue); }
+  &:not(.active) { cursor: default; }
   .step-detail { margin-top: 8px; display: flex; flex-direction: column; gap: 5px;
     p { font-size: 12.5px; color: var(--text-2); line-height: 1.65;
       i { font-style: normal; display: inline-block; min-width: 38px; color: var(--cyan); font-size: 11.5px; margin-right: 8px; }
@@ -272,8 +284,8 @@ onBeforeUnmount(() => { reset(); window.removeEventListener('resize', onChartRes
   }
 }
 .backtest { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px;
-  span { flex: 1; min-width: 126px; padding: 7px 10px; border: 1px solid rgba(52,211,153,0.24); border-radius: 8px; color: var(--text-2); font-size: 11px; text-align: center; background: rgba(52,211,153,0.05); }
-  b { color: #6ee7a0; }
+  span { flex: 1; min-width: 126px; padding: 7px 10px; border: 1px solid rgba(77,168,255,0.24); border-radius: 8px; color: var(--text-2); font-size: 11px; text-align: center; background: rgba(77,168,255,0.05); }
+  b { color: #7dd8f5; }
 }
 .holdout-note { color: var(--text-3); font-size: 11px; margin-bottom: 8px; }
 .chart { height: 270px; }

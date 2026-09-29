@@ -41,7 +41,10 @@ export function createLabScene(container, {
   cameraPos = [0, 2.2, 9.5],
   bloomStrength = 0.2,
   bloomRadius = 0.32,  // 半径略大 + 强度压低：让高光柔和扩散，而非刺眼爆发
-  bloomThreshold = 0.86 // 阈值抬高：只有极亮点才泛光，普通高光不再发光
+  bloomThreshold = 0.86, // 阈值抬高：只有极亮点才泛光，普通高光不再发光
+  // 控制器覆盖项。传 false 表示该页面完全不创建 OrbitControls（首页展台靠程序化动画，
+  // 不接受用户视角操作）；传对象则按字段覆盖下面的默认手感。
+  controls: ctrlOptions = {}
 } = {}) {
   // bloomStrength <= 0 时完全跳过后期管线（兼容低稳定性 GPU / 驱动）
   const bloomEnabled = bloomStrength > 0
@@ -118,12 +121,57 @@ export function createLabScene(container, {
   }
   rebuildComposer()
 
-  const controls = new OrbitControls(camera, renderer.domElement)
-  controls.enableDamping = true
-  controls.dampingFactor = 0.06
-  controls.maxPolarAngle = Math.PI / 2 + 0.15
-  controls.minDistance = 3
-  controls.maxDistance = 30
+  // 默认手感：只允许小幅旋转观察。
+  // 早期版本是 minDistance 3 / maxDistance 30 且 zoomSpeed 1，滚轮一格就把相机推到模型脸上，
+  // 表现为"一拖动就放的特别大"。所以默认值收紧：关缩放、关平移、旋转放慢。
+  //
+  // ⚠️ 默认值不是禁令。**需要"细看"的教学页（如结构页 TypesView）应当显式打开
+  // enableZoom / enablePan**，并配 zoomSpeed≈0.4、minDistance≥4 ——
+  // "一格贴脸"的根因是 minDistance 太小 + zoomSpeed 太大，不是"开了缩放"本身。
+  const o = {
+    enabled: true,
+    enableZoom: false,        // 标本展台默认不可推拉；细看类页面自行打开
+    zoomSpeed: 0.5,
+    enablePan: false,
+    panSpeed: 0.8,
+    screenSpacePanning: true, // 平移跟随屏幕平面，比默认的垂直平面符合直觉
+    enableRotate: true,
+    rotateSpeed: 0.62,        // 放慢旋转，避免轻轻一拽就转半圈
+    autoRotate: false,
+    autoRotateSpeed: 0.6,
+    dampingFactor: 0.055,     // 兼顾"跟手"与不飘
+    minDistance: 6,
+    maxDistance: 16,
+    minPolarAngle: Math.PI * 0.22,
+    maxPolarAngle: Math.PI * 0.72,
+    minAzimuthAngle: -Infinity,
+    maxAzimuthAngle: Infinity,
+    target: [0, 0, 0],
+    ...(ctrlOptions === false ? {} : ctrlOptions)
+  }
+  const ctrl = ctrlOptions === false ? null : new OrbitControls(camera, renderer.domElement)
+  if (ctrl) {
+    ctrl.enabled = o.enabled
+    ctrl.enableDamping = true
+    ctrl.dampingFactor = o.dampingFactor
+    ctrl.rotateSpeed = o.rotateSpeed
+    ctrl.zoomSpeed = o.zoomSpeed
+    ctrl.enableZoom = o.enableZoom
+    ctrl.enablePan = o.enablePan
+    ctrl.panSpeed = o.panSpeed
+    ctrl.screenSpacePanning = o.screenSpacePanning
+    ctrl.enableRotate = o.enableRotate
+    ctrl.autoRotate = o.autoRotate
+    ctrl.autoRotateSpeed = o.autoRotateSpeed
+    ctrl.minDistance = o.minDistance
+    ctrl.maxDistance = o.maxDistance
+    ctrl.minPolarAngle = o.minPolarAngle
+    ctrl.maxPolarAngle = o.maxPolarAngle
+    ctrl.minAzimuthAngle = o.minAzimuthAngle
+    ctrl.maxAzimuthAngle = o.maxAzimuthAngle
+    ctrl.target.set(...o.target)
+    ctrl.update()
+  }
 
   let disposed = false
   const onResize = () => {
@@ -137,7 +185,7 @@ export function createLabScene(container, {
 
   function render() {
     if (disposed) return
-    controls.update()
+    ctrl?.update()
     try {
       if (bloomEnabled) composer.render()
       else renderer.render(scene, camera)
@@ -150,7 +198,7 @@ export function createLabScene(container, {
   function dispose() {
     disposed = true
     window.removeEventListener('resize', onResize)
-    controls.dispose()
+    ctrl?.dispose()
     scene.traverse((o) => {
       if (o.geometry) o.geometry.dispose()
       if (o.material) {
@@ -164,5 +212,5 @@ export function createLabScene(container, {
     renderer.domElement.remove()
   }
 
-  return { scene, camera, renderer, controls, composer, bloom, render, dispose }
+  return { scene, camera, renderer, controls: ctrl, composer, bloom, render, dispose }
 }

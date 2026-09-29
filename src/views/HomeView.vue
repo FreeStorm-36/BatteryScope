@@ -21,7 +21,7 @@
         <p class="object-tag">
           <span class="live-dot"></span>
           当前观察对象 <b class="num">BS-01</b>
-          <span>概念标本</span>
+          <span>概念标本 · 演示读数</span>
           <span class="num">SOC {{ soc.toFixed(0) }}%</span>
           <span class="num">{{ temp.toFixed(1) }} ℃</span>
         </p>
@@ -37,7 +37,7 @@
       <div ref="stage" class="observation-stage" @mousemove="onParallax">
         <div class="stage-head">
           <span><i></i> BS-01 生命观测台</span>
-          <b class="num">LIVE / CONCEPT</b>
+          <b class="num">CONCEPT · 演示读数</b>
         </div>
         <div class="stage-inner" :style="parallaxStyle">
           <div ref="threeBox" class="three-box"></div>
@@ -52,13 +52,14 @@
             <i class="num">SPECIMEN 01</i>
           </div>
           <dl>
-            <div><dt>外形</dt><dd>圆柱电芯</dd></div>
+            <div><dt>外形</dt><dd>圆柱 21700 · Φ21×70 mm</dd></div>
             <div><dt>化学体系</dt><dd>NMC · 概念设定</dd></div>
             <div><dt>状态</dt><dd class="healthy">健康观测</dd></div>
+            <div><dt>读数性质</dt><dd>演示数值 · 非实时测量</dd></div>
             <div><dt>边界</dt><dd>非 NASA B0005 实体</dd></div>
           </dl>
         </aside>
-        <p class="stage-note">拖动视线观察三维标本 · 扫描标签用于教学演示</p>
+        <p class="stage-note">按住拖动可环视电芯 · 松手后继续缓缓回转 · 扫描标签用于教学演示</p>
       </div>
     </section>
 
@@ -99,7 +100,7 @@ import gsap from 'gsap'
 import * as THREE from 'three'
 import ChapterFooter from '../components/ChapterFooter.vue'
 import { createLabScene, PALETTE } from '../three/labScene.js'
-import { buildCylindricalCell, buildJellyRoll, buildParticleFlow } from '../three/batteryModel.js'
+import { buildCylindricalCell, buildParticleFlow } from '../three/batteryModel.js'
 
 const bgCanvas = ref(null)
 const threeBox = ref(null)
@@ -182,48 +183,86 @@ onMounted(() => {
   }, 800)
 
   if (threeBox.value) {
-    scene = createLabScene(threeBox.value, { cameraPos: [0, 0.4, 8.4], fov: 37 })
+    // 首页展台：**开放旋转（可拖动环视）**，但关闭缩放与平移。
+    // 旧版的问题是 minDistance 3 + zoomSpeed 1：滚轮一格相机就贴到模型上，
+    // 那才是用户说的"一拖动就放的特别大"。所以这里保留视野缩放关闭、只留旋转。
+    // autoRotate 交给 OrbitControls 自己管：拖拽时它自动停，松手后继续缓缓回转，
+    // 比"模型自转 + 相机也动"更稳 —— 两个旋转源同时跑会互相打架。
+    scene = createLabScene(threeBox.value, {
+      cameraPos: [0, 0.2, 16.4], fov: 33,
+      controls: {
+        enableRotate: true, enableZoom: false, enablePan: false,
+        autoRotate: true, autoRotateSpeed: 0.5,
+        minDistance: 14, maxDistance: 19,
+        minPolarAngle: Math.PI * 0.32, maxPolarAngle: Math.PI * 0.66,
+        target: [-1.15, 0, 0]   // 绕电池本体旋转（标本被左移到 x = -1.15）
+      }
+    })
     const specimen = new THREE.Group()
+    // 整体左移：右下角有「状态快照」浮层，电池居中时其右侧会被浮层压住
+    specimen.position.x = -1.15
     scene.scene.add(specimen)
 
-    const cell = buildCylindricalCell({ r: 1.08, h: 3.65, label: 'BS-01' })
-    cell.position.x = -0.55
-    cell.rotation.z = 0.08
+    // 真实规格圆柱电芯：21700 = Φ21 × 70 mm（1 unit = 10 mm），不再做非等比变形
+    const CELL_H = 7.0
+    const HALF = CELL_H / 2
+    const cell = buildCylindricalCell({ format: '21700', brand: 'BS-01', voltage: 3.6, capacity: 5000 })
     specimen.add(cell)
 
-    const roll = buildJellyRoll({ r: 0.9, h: 3.15 })
-    roll.scale.setScalar(0.67)
-    roll.position.set(1.1, -0.15, 0.15)
-    roll.rotation.z = 0.08
-    specimen.add(roll)
-
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.35 })
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.9, 0.012, 8, 96), ringMat)
+    // 展台底座：双层光环，做极缓慢的呼吸
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.34 })
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.35, 0.012, 8, 128), ringMat)
     ring.rotation.x = Math.PI / 2
-    ring.scale.z = 0.7
-    ring.position.y = -1.55
+    ring.position.y = -HALF - 0.5
+    ring.scale.z = 0.78
     specimen.add(ring)
-    gsap.to(ringMat, { opacity: 0.1, duration: 2.4, yoyo: true, repeat: -1, ease: 'sine.inOut' })
 
+    const ringInner = new THREE.Mesh(
+      new THREE.TorusGeometry(3.15, 0.006, 8, 128),
+      new THREE.MeshBasicMaterial({ color: 0x4da8ff, transparent: true, opacity: 0.15 })
+    )
+    ringInner.rotation.x = Math.PI / 2
+    ringInner.position.y = -HALF - 0.5
+    ringInner.scale.z = 0.78
+    specimen.add(ringInner)
+    gsap.to(ringMat, { opacity: 0.1, duration: 3.4, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+
+    // 光带扫描：一条细环沿轴向缓慢上移，两端用 sin 包络淡出，避免循环时"跳回"
+    const sweepMat = new THREE.MeshBasicMaterial({
+      color: 0x7fe6ff, transparent: true, opacity: 0,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+    })
+    const sweep = new THREE.Mesh(new THREE.TorusGeometry(1.075, 0.007, 8, 96), sweepMat)
+    sweep.rotation.x = Math.PI / 2
+    specimen.add(sweep)
+
+    // Li⁺ 粒子：贴着壳身缓慢螺旋上升，幅度收敛，不与主体抢视觉
     const liFlow = buildParticleFlow({
-      count: 34, color: PALETTE.li, size: 0.065, speed: 0.18,
+      count: 26, color: PALETTE.li, size: 0.05, speed: 0.085,
       pathFn: (t, v, i) => {
-        const a = i * 2.399 + t * 4.2
-        v.set(Math.cos(a) * 2.2, (t - 0.5) * 3.2, Math.sin(a) * 1.25)
+        const a = i * 2.399 + t * 2.6
+        const rr = 1.42 + 0.26 * Math.sin(t * 6.2 + i)
+        v.set(Math.cos(a) * rr, (t - 0.5) * 8.2, Math.sin(a) * rr)
       }
     })
     specimen.add(liFlow.mesh)
 
     const clock = new THREE.Clock()
+    let sweepT = 0
     const loop = () => {
       raf = requestAnimationFrame(loop)
       const dt = Math.min(clock.getDelta(), 0.05)
-      specimen.rotation.y += dt * 0.18
-      cell.rotation.y += dt * 0.22
-      roll.rotation.y -= dt * 0.16
+
+      // 电池本体不再自转：旋转交给 OrbitControls（autoRotate）驱动相机。
+      // 这样用户拖动时是"观察者在绕行"，扫掠光带与 Li⁺ 粒子相对电芯的位置关系保持物理上合理。
+
+      sweepT = (sweepT + dt * 0.15) % 1
+      sweep.position.y = -HALF + sweepT * CELL_H
+      sweepMat.opacity = Math.sin(sweepT * Math.PI) * 0.42
+
       liFlow.update(dt, 1, true)
-      scene.camera.position.x += (mouse.x * 0.48 - scene.camera.position.x) * 0.035
-      scene.camera.position.y += (0.4 + mouse.y * 0.32 - scene.camera.position.y) * 0.035
+      // 注意：这里不能再写 camera.position —— OrbitControls 每帧用球坐标重算相机位置，
+      // 手动覆写会和它打架（表现为抖动/被拽回）。视差只留给 DOM 浮层（parallaxStyle）。
       scene.render()
     }
     loop()
@@ -249,7 +288,7 @@ onMounted(() => {
       if (d.y < -4) { d.y = canvas.height + 4; d.x = Math.random() * canvas.width }
       ctx.beginPath()
       ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2)
-      ctx.fillStyle = `rgba(52,211,153,${d.o})`
+      ctx.fillStyle = `rgba(77,168,255,${d.o})`
       ctx.fill()
     }
   }
@@ -278,19 +317,19 @@ onBeforeUnmount(() => {
 .bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 .vignette {
   position: fixed; inset: 0; z-index: 1; pointer-events: none;
-  background: radial-gradient(ellipse 70% 58% at 72% 28%, rgba(31, 151, 111, 0.09), transparent 62%);
+  background: radial-gradient(ellipse 70% 58% at 72% 28%, rgba(37, 99, 235, 0.13), transparent 62%);
 }
 .hero {
   position: relative; z-index: 2; width: min(1320px, calc(100% - 80px)); min-height: 100vh; margin: 0 auto;
-  padding: 128px 0 60px; display: grid; grid-template-columns: minmax(0, .92fr) minmax(520px, 1.08fr);
-  gap: clamp(34px, 5vw, 82px); align-items: center;
+  padding: 128px 0 60px; display: grid; grid-template-columns: minmax(0, .98fr) minmax(480px, 1.02fr);
+  gap: clamp(34px, 4.4vw, 72px); align-items: center;
 }
 .hero-copy { padding-top: 20px; }
-.eyebrow { color: var(--green); font-size: 11px; font-weight: 600; letter-spacing: .27em; }
+.eyebrow { color: var(--cyan); font-size: 11px; font-weight: 600; letter-spacing: .27em; }
 h1 {
-  margin-top: 18px; color: var(--text-1); font-size: clamp(44px, 5.2vw, 76px); line-height: 1.08;
-  letter-spacing: -.045em; font-weight: 760;
-  span { display: inline-block; color: #9ab6ac; font-weight: 540; }
+  margin-top: 16px; color: var(--text-1); font-size: clamp(33px, 3.7vw, 52px); line-height: 1.24;
+  letter-spacing: -.028em; font-weight: 700;
+  span { display: inline-block; color: #9dbde8; font-weight: 520; }
 }
 .lead {
   max-width: 600px; margin: 25px 0 31px; color: var(--text-2); font-size: 16px; line-height: 1.95;
@@ -302,10 +341,10 @@ h1 {
 .object-tag {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 13px; margin-top: 26px;
   color: var(--text-3); font-size: 11.5px;
-  b { color: var(--green); }
+  b { color: var(--cyan); }
   span:not(.live-dot) { padding-left: 13px; border-left: 1px solid var(--hairline); }
 }
-.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 2s infinite; }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 7px rgba(34, 211, 238, 0.55); animation: blink 2s infinite; }
 @keyframes blink { 50% { opacity: .35; } }
 .hero-metrics {
   display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 38px; border-top: 1px solid var(--hairline);
@@ -314,43 +353,44 @@ h1 {
   span { color: var(--text-3); font-size: 10.5px; letter-spacing: .04em; }
 }
 .observation-stage {
-  position: relative; height: min(690px, 73vh); min-height: 560px; overflow: hidden;
-  border: 1px solid rgba(94, 184, 159, .22); border-radius: 26px;
+  position: relative; height: min(556px, 64vh); min-height: 452px; overflow: hidden;
+  border: 1px solid rgba(90, 150, 220, .24); border-radius: 24px;
   background:
-    linear-gradient(rgba(73, 155, 130, .045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(73, 155, 130, .045) 1px, transparent 1px),
-    radial-gradient(circle at 50% 43%, rgba(39, 148, 113, .15), transparent 42%),
-    rgba(7, 18, 16, .76);
+    linear-gradient(rgba(73, 120, 190, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(73, 120, 190, .05) 1px, transparent 1px),
+    radial-gradient(circle at 50% 43%, rgba(50, 110, 200, .16), transparent 42%),
+    rgba(10, 14, 26, .78);
   background-size: 34px 34px, 34px 34px, auto, auto;
-  box-shadow: 0 34px 80px rgba(0, 7, 6, .42);
+  box-shadow: 0 34px 80px rgba(0, 8, 20, .45);
 }
 .stage-head {
-  position: absolute; z-index: 5; inset: 0 0 auto; height: 54px; padding: 0 20px;
+  position: absolute; z-index: 5; inset: 0 0 auto; height: 50px; padding: 0 20px;
   display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--hairline); background: rgba(8, 19, 17, .72);
+  border-bottom: 1px solid var(--hairline); background: rgba(11, 16, 28, .74);
   span { display: inline-flex; align-items: center; gap: 9px; color: var(--text-2); font-size: 12px; }
-  span i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  span i { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); }
   b { color: var(--text-3); font-size: 9.5px; font-weight: 500; letter-spacing: .1em; }
 }
-.stage-inner { position: absolute; inset: 54px 0 0; transition: transform .22s ease-out; }
-.three-box { position: absolute; inset: 0; }
+.stage-inner { position: absolute; inset: 50px 0 0; transition: transform .22s ease-out; }
+.three-box { position: absolute; inset: 0; cursor: grab; }
+.three-box:active { cursor: grabbing; }
 .scanline {
   position: absolute; left: 8%; right: 8%; top: 8%; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(52,211,153,.72), transparent);
+  background: linear-gradient(90deg, transparent, rgba(34,211,238,.6), transparent);
   animation: scan 5.4s ease-in-out infinite; pointer-events: none;
 }
 @keyframes scan { 0%, 100% { top: 9%; opacity: 0; } 12%, 88% { opacity: 1; } 50% { top: 79%; } }
 .scan-tags { position: absolute; inset: 0; pointer-events: none; }
 .scan-tag {
-  position: absolute; padding: 4px 9px; border-left: 1px solid var(--green);
-  background: rgba(5, 17, 14, .58); color: #79e3bc; font-size: 10px; letter-spacing: .04em;
+  position: absolute; padding: 4px 9px; border-left: 1px solid var(--cyan);
+  background: rgba(8, 13, 26, .6); color: #7dd8f5; font-size: 10px; letter-spacing: .04em;
 }
 .scan-enter-active, .scan-leave-active { transition: all .4s ease; }
 .scan-enter-from, .scan-leave-to { opacity: 0; transform: translateY(6px); }
 .console {
   position: absolute; z-index: 6; right: 18px; bottom: 42px; width: 230px; padding: 15px 16px;
-  border: 1px solid rgba(107, 190, 164, .22); border-radius: 14px;
-  background: rgba(6, 16, 14, .82); backdrop-filter: blur(12px);
+  border: 1px solid rgba(107, 155, 210, .22); border-radius: 14px;
+  background: rgba(9, 13, 26, .82); backdrop-filter: blur(12px);
 }
 .console-title {
   display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid var(--hairline);
@@ -372,29 +412,29 @@ h1 {
 .journey-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--hairline); border-radius: 20px; overflow: hidden; }
 .journey-card {
   position: relative; min-height: 284px; padding: 24px; color: var(--text-1); text-decoration: none;
-  background: rgba(10, 24, 21, .58); border-right: 1px solid var(--hairline);
+  background: rgba(14, 20, 34, .6); border-right: 1px solid var(--hairline);
   transition: background .22s ease, transform .22s ease;
   &:last-child { border-right: 0; }
-  &:hover { z-index: 2; background: rgba(20, 52, 43, .7); transform: translateY(-4px); }
+  &:hover { z-index: 2; background: rgba(24, 40, 68, .72); transform: translateY(-4px); }
   .step { color: var(--text-3); font-size: 10px; }
-  .card-icon { display: grid; place-items: center; width: 44px; height: 44px; margin: 30px 0 20px; border: 1px solid var(--hairline); border-radius: 13px; background: rgba(52,211,153,.06); }
-  .card-icon :deep(svg) { width: 27px; fill: none; stroke: var(--green); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+  .card-icon { display: grid; place-items: center; width: 44px; height: 44px; margin: 30px 0 20px; border: 1px solid var(--hairline); border-radius: 13px; background: rgba(77,168,255,.07); }
+  .card-icon :deep(svg) { width: 27px; fill: none; stroke: var(--blue); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
   h3 { margin-bottom: 9px; font-size: 17px; }
   p { color: var(--text-2); font-size: 12.5px; line-height: 1.75; }
-  > b { position: absolute; left: 24px; bottom: 22px; color: var(--green); font-size: 11px; font-weight: 500; }
+  > b { position: absolute; left: 24px; bottom: 22px; color: var(--blue); font-size: 11px; font-weight: 500; }
   > b i { margin-left: 4px; font-style: normal; }
 }
 .evidence-boundary {
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px; margin-top: 18px; padding: 17px 20px;
-  border: 1px solid rgba(94, 184, 159, .18); border-radius: 14px; background: rgba(9, 22, 19, .62);
-  .boundary-mark { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--green); border-radius: 50%; color: var(--green); font: 500 13px var(--mono); }
+  border: 1px solid rgba(90, 150, 220, .2); border-radius: 14px; background: rgba(13, 19, 32, .65);
+  .boundary-mark { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--blue); border-radius: 50%; color: var(--blue); font: 500 13px var(--mono); }
   b { display: block; margin-bottom: 2px; font-size: 12px; }
   p { color: var(--text-2); font-size: 11.5px; }
-  a { color: var(--green); font-size: 11.5px; text-decoration: none; white-space: nowrap; }
+  a { color: var(--blue); font-size: 11.5px; text-decoration: none; white-space: nowrap; }
 }
 @media (max-width: 1040px) {
   .hero { grid-template-columns: 1fr; padding-top: 138px; }
-  .observation-stage { min-height: 510px; height: 60vh; }
+  .observation-stage { min-height: 430px; height: 56vh; }
   .journey-grid { grid-template-columns: repeat(2, 1fr); }
   .journey-card:nth-child(2) { border-right: 0; }
   .journey-card:nth-child(-n+2) { border-bottom: 1px solid var(--hairline); }
@@ -402,9 +442,9 @@ h1 {
 @media (max-width: 720px) {
   .hero, .journey { width: calc(100% - 36px); }
   .hero { padding-top: 106px; gap: 38px; }
-  h1 { font-size: clamp(39px, 12vw, 56px); }
+  h1 { font-size: clamp(29px, 9vw, 42px); }
   .hero-metrics { grid-template-columns: repeat(2, 1fr); }
-  .observation-stage { min-height: 480px; }
+  .observation-stage { min-height: 400px; }
   .console { width: calc(100% - 36px); }
   .section-head { display: block; > p { margin-top: 12px; } }
   .journey-grid { grid-template-columns: 1fr; }

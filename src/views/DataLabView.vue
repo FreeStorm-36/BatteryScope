@@ -110,7 +110,7 @@
     <!-- ═══ 板块 B · 因素—机制—趋势沙盘 ═══ -->
     <div class="section-head">
       <h3>板块 B · 因素 → 机制 → 趋势沙盘</h3>
-      <p>选择环境因素 → 看它触发的老化机制 → 趋势曲线随之变化。趋势演示，不输出精确寿命数字。</p>
+      <p>选择环境因素 → 看它触发的老化机制 → 趋势曲线随之变化。曲线形状与逐次起伏取自 NASA 实测退化轨迹，工况只改变退化速度；趋势演示，不输出精确寿命数字。</p>
     </div>
 
     <div class="labB panel">
@@ -140,13 +140,18 @@
         <div class="sb-col trend-col">
           <h4>③ 衰退趋势</h4>
           <div ref="chartB" class="chart"></div>
+          <p class="trend-src">
+            <b>曲线依据</b>形状与逐点起伏来自 NASA PCoE 实测记录：{{ SHAPE_META.cells.join(' / ') }} 四颗 18650 的
+            容量保持率按归一化寿命集成平均，再叠回 B0005 的实测残差（σ≈{{ (SHAPE_META.residSd * 100).toFixed(2) }} 个百分点）。
+            工况只压缩时间轴，不改变轨迹形状；内阻无本站实测记录，按 R/R₀ = 1/SOH 定性换算。
+          </p>
           <div class="verdict panel-glass">
             <i>组合趋势</i>
             <b :class="trendClass">{{ trendText }}</b>
           </div>
         </div>
       </div>
-      <p class="tag demo sb-note">环境因素趋势演示 · 固定科普规则矩阵，非寿命预测模型</p>
+      <p class="tag demo sb-note">环境因素趋势演示 · 工况→倍率映射为本站科普规则，非寿命预测模型 · 曲线形状与起伏来自 NASA PCoE 实测记录</p>
     </div>
 
     <ChapterFooter conclusion="真实曲线告诉我们电池怎样变老；因素—机制—趋势的链条帮助我们理解它为什么可能老得更快。" />
@@ -157,6 +162,9 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { initChart } from '../services/charts.js'
 import { loadBattery, NASA_IDS, envRules, TREND_LEVELS } from '../data/index.js'
+// 趋势曲线的形状与逐点起伏来自 NASA PCoE 四颗电芯的实测记录，
+// 由 scripts/gen-trend-template.cjs 自动提取生成，不要在页面里手写拟合公式
+import { SHAPE, SHAPE_N, RESID, SHAPE_META } from '../data/nasa/trendTemplate.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
 import DataBadge from '../components/DataBadge.vue'
 import IconGlyph from '../components/IconGlyph.vue'
@@ -438,27 +446,64 @@ const comboHint = computed(() => {
   return ''
 })
 
+// ── 趋势曲线：形状与起伏全部取自实测，工况只压缩时间轴 ──
+// SEV_K：工况严重度 → 时间压缩倍率。这是本站的教学规则（不是寿命模型）：
+// 它只决定"跑完整条 NASA 实测退化轨迹需要多少次循环"，不改变轨迹本身的形状。
+const SEV_K = [0.55, 1, 1.55, 2.2]
+
 function drawB() {
-  const sev = activeTrend.value // 0..3
+  const sev = Math.min(3, activeTrend.value)
+  const compress = SEV_K[sev] / SEV_K[SEV_K.length - 1]
   const xs = []
   const ys = []
   const y2 = []
-  const k = [0.6, 1, 1.5, 2.1][sev]
   for (let c = 0; c <= 600; c += 5) {
+    // p：归一化寿命进度。最严苛工况在 600 次循环时刚好走完整条实测轨迹
+    const p = Math.min(1, (c / 600) * compress)
+    const shape = SHAPE[Math.round(p * SHAPE_N)]              // 实测集成平均形状
+    const resid = RESID[Math.min(RESID.length - 1, Math.round(p * (RESID.length - 1)))] // 实测逐次起伏
+    const soh = shape + resid
     xs.push(c)
-    ys.push(+Math.max(60, 100 - 1.1 * k * (c / 600) * 22 - 0.4 * k * Math.pow(c / 600, 2.2) * 22).toFixed(2))
-    y2.push(+(100 + (k - 1) * 22 * (c / 600) + (k > 1 ? 8 * Math.pow(c / 600, 2) : 0)).toFixed(2))
+    ys.push(+(soh * 100).toFixed(2))
+    y2.push(+(100 / soh).toFixed(2))                          // 内阻示意：R/R₀ = 1/SOH
   }
+  const sohColor = sev >= 2 ? '#f59e0b' : '#34d399'
   chart2.setOption({
     backgroundColor: 'transparent',
     animationDuration: 700,
-    grid: { left: 46, right: 14, top: 26, bottom: 36 },
+    // 本列很窄：图例放到底部，把顶部空间让给左右两个 y 轴的名称，避免互相压字
+    grid: { left: 42, right: 44, top: 26, bottom: 50 },
+    legend: { textStyle: { color: '#8b98b0', fontSize: 10 }, bottom: 0, left: 'center', icon: 'rect', itemWidth: 12, itemHeight: 3, itemGap: 12 },
     tooltip: { trigger: 'axis', backgroundColor: 'rgba(13,18,32,0.95)', borderColor: 'rgba(77,168,255,0.3)', textStyle: { color: '#e6edf7', fontSize: 12 } },
-    xAxis: { type: 'category', data: xs, name: '循环', nameTextStyle: { color: '#8b98b0' }, axisLabel: { color: '#8b98b0' }, axisLine: { lineStyle: { color: 'rgba(77,168,255,0.3)' } } },
-    yAxis: { type: 'value', min: 55, max: 135, axisLabel: { color: '#8b98b0' }, splitLine: { lineStyle: { color: 'rgba(77,168,255,0.08)' } } },
+    xAxis: { type: 'category', data: xs, axisLabel: { color: '#8b98b0', fontSize: 10 }, axisLine: { lineStyle: { color: 'rgba(77,168,255,0.3)' } } },
+    yAxis: [
+      {
+        type: 'value', min: 60, max: 104, name: '保持率 %', nameGap: 6,
+        nameTextStyle: { color: '#64748b', fontSize: 9.5, align: 'left' },
+        axisLabel: { color: '#8b98b0', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(77,168,255,0.08)' } }
+      },
+      {
+        type: 'value', min: 90, max: 156, name: '内阻 %', nameGap: 6,
+        nameTextStyle: { color: '#64748b', fontSize: 9.5, align: 'right' },
+        axisLabel: { color: '#8b98b0', fontSize: 10 }, splitLine: { show: false }
+      }
+    ],
     series: [
-      { name: 'SOH 趋势（示意）', type: 'line', data: ys, smooth: 0.4, symbol: 'none', lineStyle: { color: sev >= 2 ? '#f59e0b' : '#34d399', width: 2.4 }, itemStyle: { color: sev >= 2 ? '#f59e0b' : '#34d399' }, areaStyle: { color: 'rgba(77,168,255,0.06)' } },
-      { name: '内阻趋势（示意）', type: 'line', data: y2, smooth: 0.4, symbol: 'none', lineStyle: { color: '#ef4444', width: 1.8, type: 'dashed' }, itemStyle: { color: '#ef4444' } }
+      {
+        name: '容量保持率（NASA 形状）', type: 'line', data: ys, smooth: 0.12, symbol: 'none',
+        lineStyle: { color: sohColor, width: 2.4 }, itemStyle: { color: sohColor },
+        areaStyle: { color: 'rgba(77,168,255,0.05)' },
+        markLine: {
+          silent: true, symbol: 'none',
+          lineStyle: { color: '#f59e0b', type: 'dotted', width: 1.2 },
+          label: { formatter: '80% 参考线', color: '#f59e0b', fontSize: 9.5, position: 'insideEndTop', distance: 2 },
+          data: [{ yAxis: 80 }]
+        }
+      },
+      {
+        name: '内阻（示意 1/SOH）', type: 'line', data: y2, yAxisIndex: 1, smooth: 0.12,
+        symbol: 'none', lineStyle: { color: '#ef4444', width: 1.6, type: 'dashed' }, itemStyle: { color: '#ef4444' }
+      }
     ]
   }, { notMerge: true })
 }
@@ -526,13 +571,16 @@ onBeforeUnmount(() => {
   .corner { position: absolute; right: 0; top: 8px; display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
   .corner > span { display: flex; align-items: center; gap: 9px; }
 }
-.meta-overlay { position: fixed; inset: 0; z-index: 180; display: flex; justify-content: flex-end; background: rgba(0, 7, 6, .58); backdrop-filter: blur(5px); }
+// ⚠️ 这两处底色原先是 rgba(0,7,6) / rgba(7,20,17) —— 绿黑色。
+// 全站是「深蓝生命观测站」（--bg-page #0a0e1a），这里留着上一版翡翠绿的残留，
+// 抽屉一拉开就会跟蓝底页面撞色。统一改回蓝黑。
+.meta-overlay { position: fixed; inset: 0; z-index: 180; display: flex; justify-content: flex-end; background: rgba(3, 6, 16, .62); backdrop-filter: blur(5px); }
 .meta-drawer {
   width: min(520px, 94vw); height: 100%; padding: 28px; overflow-y: auto; border-radius: 22px 0 0 22px;
-  background: rgba(7, 20, 17, .98);
+  background: rgba(10, 14, 26, .98);
   .drawer-head { display: flex; align-items: start; justify-content: space-between; gap: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--hairline); }
   .drawer-head h3 { font-size: 22px; }
-  dl > div { display: grid; grid-template-columns: 120px 1fr; gap: 18px; padding: 13px 0; border-bottom: 1px solid rgba(112,180,160,.12); }
+  dl > div { display: grid; grid-template-columns: 120px 1fr; gap: 18px; padding: 13px 0; border-bottom: 1px solid rgba(90,150,220,.14); }
   dt { color: var(--text-3); font-size: 12px; }
   dd { color: var(--text-1); font-size: 12.5px; }
   .badge-guide { display: grid; gap: 10px; margin-top: 22px; padding: 16px; border: 1px solid var(--hairline); border-radius: 14px; }
@@ -595,6 +643,10 @@ onBeforeUnmount(() => {
     &.danger { color: #ffb4b4; } } }
 .trend-col { display: flex; flex-direction: column;
   .chart { height: 250px; }
+  .trend-src { margin-top: 8px; font-size: 11px; line-height: 1.65; color: var(--text-3);
+    b { display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 5px; font-weight: 500;
+      font-size: 10px; letter-spacing: 0.1em; color: var(--blue); background: rgba(77,168,255,0.1);
+      border: 1px solid rgba(77,168,255,0.22); } }
   .verdict { margin-top: 10px; padding: 10px 16px; display: flex; align-items: center; justify-content: center; gap: 14px;
     i { font-style: normal; font-size: 11.5px; color: var(--text-2); letter-spacing: 0.2em; }
     b { font-size: 22px; &.good { color: var(--green); } &.warn { color: var(--amber); } &.bad { color: var(--red); } } } }

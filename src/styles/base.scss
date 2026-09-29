@@ -1,33 +1,38 @@
-// BatteryScope V3.3 设计系统 —— 深色生命观测站
-// 原则：近黑绿底 + 单一翡翠主色 + 数据蓝辅色，降低无意义辉光与卡片堆叠
+// BatteryScope V3.3 设计系统 —— 深蓝生命观测站
+// 原则：深蓝黑底 + 霓虹蓝/青主色 + 数据语义辅色，降低无意义辉光与卡片堆叠
 
 :root {
+  // 让浏览器知道这是深色站点：原生表单控件（range / checkbox / select 的下拉列表、
+  // 自动填充、滚动条）才会按深色渲染。不写这一行，站点里那些 <input type="range">
+  // 会在深色卡片上渲染成一条浅灰轨道，是全站最容易露怯的一处不协调。
+  color-scheme: dark;
+
   // ── 深色底色（深蓝黑，带科技感而非死灰） ──
-  --bg-page: #06100f;
-  --bg-block: #091513;
-  --panel-1: #0e1c19;
-  --panel-2: #12231f;
+  --bg-page: #0a0e1a;
+  --bg-block: #0d1220;
+  --panel-1: #131a2b;
+  --panel-2: #182138;
 
   // ── 品牌色（霓虹蓝/青，科技感主色） ──
-  --blue: #5ea8ff;             // 数据蓝
+  --blue: #4da8ff;             // 主蓝
   --blue-deep: #2563eb;
-  --cyan: #32d7ca;             // Li⁺ 青
-  --green: #34d399;            // 品牌与健康主色
+  --cyan: #22d3ee;             // Li⁺ 青
+  --green: #34d399;            // 健康/正常（保留为语义色）
   --amber: #f59e0b;            // 老化/拐点
   --red: #ef4444;              // 失效
   --violet: #a78bfa;           // 正极材料
 
   // ── 文本三级（冷白向，保持科技通透感） ──
-  --text-1: #edf7f3;
-  --text-2: #9cb7ae;
-  --text-3: #66817a;
+  --text-1: #eaf2ff;
+  --text-2: #9fb0c8;
+  --text-3: #64748b;
 
   // ── 描边与辉光（霓虹感，强度收敛） ──
-  --hairline: rgba(112, 180, 160, 0.2);
-  --hairline-strong: rgba(93, 220, 181, 0.4);
+  --hairline: rgba(90, 150, 220, 0.22);
+  --hairline-strong: rgba(120, 180, 255, 0.38);
   --glow-blue: 0 0 14px rgba(77, 168, 255, 0.18); // 蓝色辉光（弱化）
   --glow-cyan: 0 0 14px rgba(34, 211, 238, 0.18);
-  --panel-bg: rgba(11, 25, 22, 0.72);
+  --panel-bg: rgba(15, 21, 38, 0.66);
 
   // ── 字体 ──
   --sans: -apple-system, 'PingFang SC', 'HarmonyOS Sans SC', 'MiSans', 'Microsoft YaHei', 'Source Han Sans SC', system-ui, sans-serif;
@@ -37,13 +42,17 @@
   --radius-sm: 10px;
 
   // ── 阴影层级（含蓝色光晕的"厚度"） ──
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 34px rgba(0, 8, 6, 0.28);
-  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.4), 0 20px 54px rgba(0, 8, 6, 0.4);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 34px rgba(10, 20, 45, 0.5);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 54px rgba(10, 20, 45, 0.55);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 button, a, input, select { font: inherit; }
+
+// 全站滑杆统一用品牌青作为填充色（配合上面的 color-scheme: dark，
+// 轨道走深色，已填充部分走青色），不必每页各写一遍。
+input[type='range'] { accent-color: var(--cyan); }
 
 :focus-visible {
   outline: 2px solid var(--cyan);
@@ -53,8 +62,8 @@ button, a, input, select { font: inherit; }
 html, body {
   background: var(--bg-page);
   background-image:
-    radial-gradient(circle at 72% 8%, rgba(30, 128, 99, 0.12), transparent 30%),
-    linear-gradient(180deg, #06100f 0%, #081311 48%, #050c0b 100%);
+    radial-gradient(circle at 72% 8%, rgba(37, 99, 235, 0.13), transparent 30%),
+    linear-gradient(180deg, #0a0e1a 0%, #0c1220 48%, #080c16 100%);
   color: var(--text-1);
   font-family: var(--sans);
   font-size: 15px;
@@ -71,7 +80,7 @@ html, body {
 
 // ── 通用面板：低对比表面 + 清晰边界 ──
 .panel {
-  background: linear-gradient(180deg, rgba(17, 35, 30, 0.78), rgba(8, 19, 17, 0.94));
+  background: linear-gradient(180deg, rgba(24, 33, 54, 0.72), rgba(13, 18, 34, 0.9));
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
   box-shadow: var(--shadow-1);
@@ -84,31 +93,40 @@ html, body {
   border-radius: var(--radius);
   box-shadow: var(--shadow-1);
 }
+// 轻卡片：比 .panel 更薄的一层，用于并排的小信息块。
+// ⚠️ 必须放在全局。它原先只写在 PredictionView 的 <style scoped> 里，
+// 而 EndingView 也在用 class="card-panel" —— scoped 样式跨组件不生效，
+// 于是那边的"卡片"其实既没有底色也没有边框，白白丢了一整层视觉结构。
+.card-panel {
+  background: rgba(20, 27, 46, 0.6);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+}
 
-// ── 可点元素：轻微上浮，主操作使用翡翠色 ──
+// ── 可点元素：轻微上浮，主操作使用霓虹蓝 ──
 .glow-hover {
   transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
   &:hover {
     transform: translateY(-2px);
     border-color: var(--hairline-strong);
-    box-shadow: 0 14px 34px rgba(0, 8, 6, 0.36);
+    box-shadow: 0 14px 34px rgba(10, 20, 45, 0.45);
   }
 }
 
 .btn-primary {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 12px 28px;
-  border: 1px solid rgba(52, 211, 153, 0.62);
+  border: 1px solid rgba(77, 168, 255, 0.55);
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(31, 180, 129, 0.9), rgba(27, 142, 118, 0.82));
-  color: #effff8;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.42), rgba(34, 211, 238, 0.26));
+  color: #f0f7ff;
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 10px 28px rgba(12, 105, 80, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 28px rgba(20, 60, 130, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.22s ease, background 0.22s ease;
-  &:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(12, 134, 97, 0.4); background: linear-gradient(135deg, #2acb94, #1e9d83); }
+  &:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(30, 90, 180, 0.44); background: linear-gradient(135deg, rgba(37, 99, 235, 0.58), rgba(34, 211, 238, 0.36)); }
   &:active { transform: translateY(0); }
 }
 
@@ -117,13 +135,13 @@ html, body {
   padding: 8px 18px;
   border: 1px solid var(--hairline);
   border-radius: 999px;
-  background: rgba(13, 31, 27, 0.66);
+  background: rgba(19, 26, 43, 0.6);
   color: var(--text-2);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s ease;
-  &:hover { color: var(--text-1); border-color: var(--hairline-strong); background: rgba(52,211,153,.06); }
-  &.active { color: #edfff8; border-color: rgba(52, 211, 153, 0.5); background: rgba(52, 211, 153, 0.1); }
+  &:hover { color: var(--text-1); border-color: var(--hairline-strong); background: rgba(77, 168, 255, 0.07); }
+  &.active { color: #eaf6ff; border-color: rgba(77, 168, 255, 0.58); background: rgba(77, 168, 255, 0.16); }
 }
 
 .tag {
@@ -138,14 +156,14 @@ html, body {
 // 章节标题体系
 .chapter-eyebrow {
   font-size: 12px; letter-spacing: 0.24em; color: var(--cyan);
-  text-transform: uppercase; margin-bottom: 10px; font-weight: 500;
+  text-transform: uppercase; margin-bottom: 7px; font-weight: 500;
 }
 .chapter-title {
-  font-size: clamp(26px, 3.2vw, 40px);
+  font-size: clamp(25px, 3vw, 37px);
   font-weight: 700; letter-spacing: -0.01em; line-height: 1.25;
   color: var(--text-1);
 }
-.chapter-sub { color: var(--text-2); font-size: 15px; margin-top: 8px; max-width: 60ch; }
+.chapter-sub { color: var(--text-2); font-size: 15px; margin-top: 6px; max-width: 60ch; }
 
 // 滑块统一外观（霓虹滑块）
 input[type='range'] {
@@ -170,8 +188,8 @@ input[type='range'] {
 // 滚动条（蓝色系）
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--bg-block); }
-::-webkit-scrollbar-thumb { background: rgba(52, 211, 153, 0.25); border-radius: 5px; border: 2px solid var(--bg-block); }
-::-webkit-scrollbar-thumb:hover { background: rgba(52, 211, 153, 0.44); }
+::-webkit-scrollbar-thumb { background: rgba(77, 168, 255, 0.28); border-radius: 5px; border: 2px solid var(--bg-block); }
+::-webkit-scrollbar-thumb:hover { background: rgba(77, 168, 255, 0.48); }
 
 @media (max-width: 900px) {
   html { font-size: 14px; }

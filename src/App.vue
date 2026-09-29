@@ -8,7 +8,21 @@
 </template>
 
 <script setup>
+import { watch } from 'vue'
+import { useRoute } from 'vue-router'
 import LifeTrackNav from './components/LifeTrackNav.vue'
+
+const route = useRoute()
+
+// 章节切换后强制回到页面顶部：
+// 固定导航高约 82px，若残留上一页的滚动位置，章节标题会被导航压住、动画区底部也会被切出视口。
+watch(
+  () => route.path,
+  () => {
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  },
+  { flush: 'post' }
+)
 </script>
 
 <style lang="scss">
@@ -18,11 +32,13 @@ import LifeTrackNav from './components/LifeTrackNav.vue'
 }
 .page-full {
   max-width: 1320px; margin: 0 auto;
-  padding: 110px 48px 0;
+  // 固定导航实际高约 82px，上边距收到 92px：章节内容整体上移，
+  // 让「标题 + 动画舞台 + 右侧控制卡」能在一屏内完整落位。
+  padding: 92px 48px 0;
   min-height: calc(100vh - 160px);
   box-sizing: border-box;
 }
 @media (max-width: 760px) {
-  .page, .page-full { padding: 94px 20px 0; }
+  .page, .page-full { padding: 82px 20px 0; }
 }
 </style>

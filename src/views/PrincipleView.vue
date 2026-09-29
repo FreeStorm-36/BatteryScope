@@ -16,10 +16,18 @@
           <span class="lg"><i class="dot li"></i>Li⁺ 锂离子（内部）</span>
           <span class="lg"><i class="dot el"></i>e⁻ 电子（外部）</span>
         </div>
-        <!-- 状态角标 -->
-        <div class="state-tag panel-glass" :class="mode">
-          <b>{{ modeName }}</b>
-          <i>{{ stateHint }}</i>
+        <!-- 右上：状态角标 + 视角工具（纵向排，避免和角标重叠） -->
+        <div class="stage-right">
+          <div class="state-tag panel-glass" :class="mode">
+            <b>{{ modeName }}</b>
+            <i>{{ stateHint }}</i>
+          </div>
+          <div class="view-tools">
+            <button class="btn-ghost view-reset" title="恢复到初始角度与距离" @click="resetView">
+              <IconGlyph name="reset" /> 重置视角
+            </button>
+            <p class="view-hint">拖拽旋转 · 滚轮缩放 · 右键平移</p>
+          </div>
         </div>
 
         <!-- 结构标签（高级显示） -->
@@ -122,6 +130,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as THREE from 'three'
 import { createLabScene, PALETTE, pool } from '../three/labScene.js'
+import { createCameraFly } from '../three/cameraFly.js'
 import { buildParticleFlow } from '../three/batteryModel.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
 import DataBadge from '../components/DataBadge.vue'
@@ -269,6 +278,13 @@ function step(d) {
 
 // ── 3D ──
 let scene = null, raf = 0
+const fly = createCameraFly(() => scene)
+/* 取景基准：电芯本体高 3.4、半径 2.2，外接电源/灯泡挂在 y≈3.0、x≈±1.9，
+   加上两侧导线后整体约 6.6 宽 × 4.7 高（建模时已整体缩放 0.9）。
+   相机距目标 9.4、fov 40 → 目标平面可视高度 2×9.4×tan20° ≈ 6.8，模型占画幅约七成，
+   留出的余量刚好让左下/右下的控件不压到模型。 */
+const HOME_POS = [0, 1.35, 9.4]
+const HOME_TARGET = [0, 0.74, 0]
 let liFlow, eFlow, liPathLine, ePathL, ePathR, bulbMat, bulbGlow, chargerMat, arrowsL = [], arrowsR = []
 let labelAnchors = [], builtCurves = null
 const clock = new THREE.Clock()
@@ -316,9 +332,9 @@ function buildCutaway() {
   const mkBranch = (dirX) => {
     const pts = [
       new THREE.Vector3(dirX * (R - 0.5), H * 0.43, 0),
-      new THREE.Vector3(dirX * (R + 0.9), H * 0.75, 0),
-      new THREE.Vector3(dirX * (R + 0.9), H * 1.5, 0),
-      new THREE.Vector3(dirX * 0.55, H * 2.05, 0)
+      new THREE.Vector3(dirX * (R + 0.3), H * 0.64, 0),
+      new THREE.Vector3(dirX * (R + 0.3), H * 0.88, 0),
+      new THREE.Vector3(dirX * 0.62, H * 0.88, 0)
     ]
     const curve = new THREE.CatmullRomCurve3(pts)
     const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.035, 8), wireMat)
@@ -351,19 +367,19 @@ function buildCutaway() {
   // 电源与灯泡
   chargerMat = new THREE.MeshStandardMaterial({ color: 0x1f2b47, roughness: 0.5, metalness: 0.4, emissive: 0x1d4ed8, emissiveIntensity: 0.12 })
   const charger = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.62, 0.5), chargerMat)
-  charger.position.set(-1.7, H * 2.05, 0)
+  charger.position.set(-1.55, H * 0.88, 0)
   charger.name = '外部电源'
   g.add(charger)
   bulbMat = new THREE.MeshBasicMaterial({ color: 0x333f55 })
   const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.34, 20, 20), bulbMat)
-  bulb.position.set(1.7, H * 2.05, 0)
+  bulb.position.set(1.55, H * 0.88, 0)
   bulb.name = '负载（灯泡）'
   g.add(bulb)
   bulbGlow = new THREE.PointLight(0xffd166, 0, 9)
   bulbGlow.position.copy(bulb.position)
   g.add(bulbGlow)
   const bulbBase = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.3, 12), wireMat)
-  bulbBase.position.set(1.7, H * 2.05 - 0.36, 0)
+  bulbBase.position.set(1.55, H * 0.88 - 0.36, 0)
   g.add(bulbBase)
 
   const mkDashed = (curve, color) => {
@@ -393,10 +409,38 @@ function buildCutaway() {
   return g
 }
 
+/* 重置视角：放开缩放/平移后，用户很容易把自己"转丢"（模型贴到脸上或推出画面），
+   必须留一个一键回正的退路。 */
+function resetView() {
+  if (!scene) return
+  fly.flyTo(HOME_POS, HOME_TARGET, 0.6)
+}
+
 onMounted(async () => {
   await nextTick()
-  scene = createLabScene(threeBox.value, { cameraPos: [0, 2.7, 9.8], fov: 40 })
-  scene.controls.target.set(0, -0.12, 0)
+  // 允许旋转 + 缩放 + 平移（细看口径）：默认取景不变，但用户可以自己凑近看内部结构。
+  // 「一格贴脸」的根因不是"开了缩放"，而是 minDistance 太小 + zoomSpeed 太大，所以
+  // minDistance 取 4.6（模型高 3.06，再近就会穿进壳里），zoomSpeed 压到 0.42。
+  scene = createLabScene(threeBox.value, {
+    cameraPos: HOME_POS,
+    fov: 40,
+    controls: {
+      enableRotate: true,
+      enableZoom: true,
+      enablePan: true,
+      zoomSpeed: 0.42,
+      rotateSpeed: 0.55,
+      panSpeed: 0.72,
+      screenSpacePanning: true,
+      dampingFactor: 0.055,
+      minDistance: 4.6,
+      maxDistance: 16,
+      minPolarAngle: Math.PI * 0.18,
+      maxPolarAngle: Math.PI * 0.82,
+      target: HOME_TARGET
+    }
+  })
+  scene.controls.target.set(...HOME_TARGET)
   scene.controls.update()
   const cutaway = buildCutaway()
   cutaway.scale.setScalar(0.9) // 缩小初始观感，避免播放/拖动时模型过大
@@ -485,6 +529,9 @@ onMounted(async () => {
       })
     }
 
+    // 相机飞行（重置视角）与渲染同源推进
+    fly.step(dt)
+
     scene.render()
   }
   loop()
@@ -495,17 +542,22 @@ let eBranch = 'left'
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
+  fly.cancel()
   if (scene) scene.dispose()
 })
 </script>
 
 <style scoped lang="scss">
-.principle { display: flex; flex-direction: column; gap: 22px; }
+.principle { display: flex; flex-direction: column; gap: 20px;
+  // 首屏高度预算：舞台随视口高度自适应，矮屏自动压扁，
+  // 保证「章节标题 + 3D 舞台 + 右侧控制卡」在一屏内完整可见。
+  --stage-h: clamp(400px, calc(100vh - 250px), 540px);
+}
 .head { position: relative;
   .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
 }
 .bench { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; }
-.stage { position: relative; height: 580px; overflow: hidden; }
+.stage { position: relative; height: var(--stage-h); overflow: hidden; }
 .three-box { position: absolute; inset: 0; cursor: grab; }
 
 .legend { position: absolute; left: 16px; top: 14px; display: flex; flex-direction: column; gap: 7px; z-index: 4;
@@ -514,13 +566,17 @@ onBeforeUnmount(() => {
       &.li { background: #35e0c8; box-shadow: 0 0 8px #35e0c8; }
       &.el { background: #cfe4ff; box-shadow: 0 0 8px #cfe4ff; } } }
 }
-.state-tag {
-  position: absolute; right: 16px; top: 14px; padding: 9px 16px; z-index: 4; text-align: right;
+.stage-right { position: absolute; right: 16px; top: 14px; z-index: 4;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.state-tag { padding: 9px 16px; text-align: right;
   b { display: block; font-size: 16px; color: var(--cyan); }
   i { font-style: normal; font-size: 11.5px; color: var(--text-2); }
   &.charge b { color: #7df3ff; }
   &.discharge b { color: #ffd166; }
 }
+.view-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; }
+.view-hint { font-size: 11px; color: var(--text-3); letter-spacing: 0.02em; }
 .label-tag {
   position: absolute; padding: 2px 10px; font-size: 11.5px; color: var(--cyan); z-index: 3;
   border-color: rgba(34,211,238,0.3); white-space: nowrap; pointer-events: none;
@@ -540,7 +596,7 @@ onBeforeUnmount(() => {
   }
 }
 
-.controls { display: flex; flex-direction: column; gap: 14px; }
+.controls { display: flex; flex-direction: column; gap: 12px; max-height: var(--stage-h); overflow-y: auto; padding-right: 2px; }
 .task-row { display: flex; gap: 10px;
   .task-btn { flex: 1; justify-content: center; padding: 13px 8px; font-size: 15px;
     &.alt { background: linear-gradient(135deg, #b45309, #d97706); }
@@ -549,16 +605,16 @@ onBeforeUnmount(() => {
   .icon { width: 38px; height: 38px; justify-content: center; }
   .speed { margin-left: auto; display: flex; gap: 6px; } }
 .readouts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-  .ro { padding: 13px 8px; text-align: center;
+  .ro { padding: 11px 8px; text-align: center;
     i { display: block; font-style: normal; font-size: 11.5px; color: var(--text-2); margin-bottom: 4px; }
     b { font-size: 23px; color: var(--text-1); }
     .cyan { color: var(--cyan); }
     u { text-decoration: none; display: block; font-size: 10.5px; color: var(--text-3); margin-top: 2px; } } }
-.explain { padding: 16px 18px;
-  b { color: var(--blue); font-size: 14.5px; display: block; margin-bottom: 10px; }
-  dl { display: grid; grid-template-columns: 86px 1fr; gap: 9px 10px;
+.explain { padding: 14px 16px;
+  b { color: var(--blue); font-size: 14.5px; display: block; margin-bottom: 9px; }
+  dl { display: grid; grid-template-columns: 86px 1fr; gap: 8px 10px;
     dt { font-size: 12px; color: var(--cyan); padding-top: 1px; }
-    dd { font-size: 13px; color: var(--text-1); line-height: 1.75; } }
+    dd { font-size: 13px; color: var(--text-1); line-height: 1.68; } }
   .deep-btn { margin-top: 12px; padding: 5px 14px; font-size: 12px; }
   .deep { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--hairline);
     p { font-size: 12px; color: var(--text-2); line-height: 1.8; } } }
@@ -584,6 +640,8 @@ onBeforeUnmount(() => {
   p { font-size: 15px; color: var(--text-1); } }
 @media (max-width: 900px) {
   .bench { grid-template-columns: 1fr; }
-  .stage { height: 420px; }
+  .stage { height: clamp(340px, 56vh, 440px); }
+  .controls { max-height: none; overflow: visible; padding-right: 0; }
+  .view-hint { display: none; }
 }
 </style>

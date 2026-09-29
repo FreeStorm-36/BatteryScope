@@ -26,10 +26,20 @@
           </button>
         </div>
 
-        <!-- 概念进程读数 -->
-        <div class="cycle-read panel-glass num">
-          <i>概念进程</i><b>{{ cycleToProgress(cycle) }}%</b><i>SOH</i><b class="soh">{{ (st.soh * 100).toFixed(1) }}%</b>
+        <!-- 右上：读数 + 视角工具（纵向排，避开左上尺度切换与底部机制筛选） -->
+        <div class="stage-right">
+          <div class="cycle-read panel-glass num">
+            <i>概念进程</i><b>{{ cycleToProgress(cycle) }}%</b><i>SOH</i><b class="soh">{{ (st.soh * 100).toFixed(1) }}%</b>
+          </div>
+          <div class="view-tools">
+            <button class="btn-ghost view-reset" title="回到当前尺度的初始机位" @click="resetView">
+              <IconGlyph name="reset" /> 重置视角
+            </button>
+            <p class="view-hint">拖拽旋转 · 滚轮缩放 · 右键平移</p>
+          </div>
         </div>
+
+        <p class="geom-note">剖切示意：正极 / 隔膜 / 负极按层展开，便于观察机制，不按具体型号比例</p>
       </div>
 
       <!-- 控制塔：紧贴 3D 动画右侧，播放控制置顶方便点击 -->
@@ -121,9 +131,9 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as THREE from 'three'
-import gsap from 'gsap'
 import { initChart } from '../services/charts.js'
 import { createLabScene, PALETTE } from '../three/labScene.js'
+import { createCameraFly } from '../three/cameraFly.js'
 import { buildAnodeParticles } from '../three/batteryModel.js'
 import { mechanisms, AGING_MILESTONES, agingStateAt, PROGRESS_SPAN, cycleToProgress, progressToCycle } from '../data/index.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
@@ -168,6 +178,7 @@ function pausePlay() { playing.value = false; nodeFlash.value = ''; showSummary.
 
 /* ══ 3D：三个独立尺度场景（状态同步） ══ */
 let scene = null, raf = 0, chart = null, fingerChart = null
+const fly = createCameraFly(() => scene)
 let outsideGroup, sectionGroup, microGroup
 let seiMesh, dendriteGroup, crackLines, particles, electrolyteMesh, bubbles, heatLight, hotZone
 let heroP, heroSei, heroDendrites, heroCracks, heroNeighbors, heroStress
@@ -396,23 +407,34 @@ function applyAging(s) {
   })
 }
 
-/* 尺度切换：真实的不同场景 + 连续镜头推进（约 1 秒） */
+/* 尺度切换：真实的不同场景 + 连续镜头推进（约 1 秒）。
+   镜头推进交给 cameraFly（手写 rAF 插值）—— 原先是 gsap.to(camera.position)，
+   会被 OrbitControls 每帧 update() 用球坐标 + 未消化的阻尼残留推回去，
+   表现为"点了尺度但镜头停在中途"，与结构页当初那个 bug 同源。 */
+const SCALE_PRESETS = {
+  outside: { pos: [0, 1.0, 8.4], tgt: [0, -0.1, 0] },
+  section: { pos: [0.3, 1.5, 8.6], tgt: [0, -0.3, 0] },
+  micro: { pos: [2.1, 0.7, 4.4], tgt: [0, -0.1, 0] }
+}
+
 function setScale(k) {
   scale.value = k
   if (!scene) return
-  const presets = {
-    outside: { pos: [0, 1.0, 8.4], tgt: [0, -0.1, 0] },
-    section: { pos: [0.3, 1.5, 8.6], tgt: [0, -0.3, 0] },
-    micro: { pos: [2.1, 0.7, 4.4], tgt: [0, -0.1, 0] }
-  }[k]
-  gsap.to(scene.camera.position, { x: presets.pos[0], y: presets.pos[1], z: presets.pos[2], duration: 1.0, ease: 'power2.inOut' })
-  gsap.to(scene.controls.target, { x: presets.tgt[0], y: presets.tgt[1], z: presets.tgt[2], duration: 1.0, ease: 'power2.inOut', onUpdate: () => scene.controls.update() })
+  const p = SCALE_PRESETS[k]
+  fly.flyTo(p.pos, p.tgt, 1.0)
   const mid = setTimeout(() => {
     outsideGroup.visible = k === 'outside'
     sectionGroup.visible = k === 'section'
     microGroup.visible = k === 'micro'
   }, 450)
   scaleTimers.push(mid)
+}
+
+/* 重置视角：回到当前尺度自己的取景（每个尺度的正确站位不同），而不是笼统回原点。 */
+function resetView() {
+  if (!scene) return
+  const p = SCALE_PRESETS[scale.value] || SCALE_PRESETS.section
+  fly.flyTo(p.pos, p.tgt, 0.6)
 }
 
 /* ECharts 三视图（横轴 = 概念进程 %） */
@@ -488,8 +510,29 @@ function fingerOption(s) {
 
 onMounted(async () => {
   await nextTick()
-  scene = createLabScene(threeBox.value, { cameraPos: [0.3, 1.5, 8.6], fov: 42 })
-  scene.controls.target.set(0, -0.3, 0)
+  // 三个尺度的取景各不相同（微观测度的机位最近，只有约 4.9），
+  // 所以 minDistance 必须低于最紧的那一档，否则 OrbitControls 每帧都会把
+  // 刚飞到的机位往外推，镜头永远停不到预设位置。
+  scene = createLabScene(threeBox.value, {
+    cameraPos: SCALE_PRESETS.section.pos,
+    fov: 42,
+    controls: {
+      enableRotate: true,
+      enableZoom: true,
+      enablePan: true,
+      zoomSpeed: 0.42,
+      rotateSpeed: 0.55,
+      panSpeed: 0.72,
+      screenSpacePanning: true,
+      dampingFactor: 0.055,
+      minDistance: 3.8,
+      maxDistance: 16,
+      minPolarAngle: Math.PI * 0.12,
+      maxPolarAngle: Math.PI * 0.88,
+      target: SCALE_PRESETS.section.tgt
+    }
+  })
+  scene.controls.target.set(...SCALE_PRESETS.section.tgt)
   scene.controls.update()
   outsideGroup = buildOutside()
   sectionGroup = buildSection()
@@ -550,6 +593,7 @@ onMounted(async () => {
     for (const k in ns) st[k] = ns[k]
     applyAging(st)
     updatePlayhead()
+    fly.step(dt)
     if (filter.value === 'all' && fingerChart) {
       fingerChart.setOption({ series: [{ data: [{ value: fingerValue(st), name: '严重度', areaStyle: { color: 'rgba(245,158,11,0.25)' }, lineStyle: { color: '#f59e0b', width: 2 }, itemStyle: { color: '#f59e0b' } }] }] })
     }
@@ -584,6 +628,7 @@ function updatePlayhead() {
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
+  fly.cancel()
   clearTimeout(summaryTimer)
   scaleTimers.forEach(clearTimeout)
   window.removeEventListener('resize', onChartResize)
@@ -594,12 +639,16 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-.aging { display: flex; flex-direction: column; gap: 20px; }
+.aging { display: flex; flex-direction: column; gap: 20px;
+  // 首屏高度预算：舞台与控制塔同高，均随视口高度自适应，
+  // 矮屏自动压扁，保证「章节标题 + 3D 舞台 + 右侧控制卡」在一屏内完整可见。
+  --stage-h: clamp(400px, calc(100vh - 250px), 560px);
+}
 .head { position: relative;
   .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
 }
 .obs { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; align-items: start; }
-.stage { position: relative; height: 620px; overflow: hidden; }
+.stage { position: relative; height: var(--stage-h); overflow: hidden; }
 .three-box { position: absolute; inset: 0; cursor: grab; }
 .scale-row { position: absolute; left: 14px; top: 14px; display: flex; gap: 8px; z-index: 4;
   .btn-ghost { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 14px;
@@ -609,22 +658,29 @@ onBeforeUnmount(() => {
   .mech-btn { padding: 6px 12px; font-size: 12px; } }
 .m-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 1px;
   &.big { width: 12px; height: 12px; margin-right: 9px; box-shadow: 0 0 5px currentColor; } }
-.cycle-read { position: absolute; right: 14px; top: 14px; padding: 9px 16px; z-index: 4; display: flex; gap: 10px; align-items: center;
+.geom-note { position: absolute; right: 14px; bottom: 12px; z-index: 4; max-width: 46%;
+  font-size: 10.5px; line-height: 1.55; text-align: right; color: var(--text-3); opacity: 0.86; pointer-events: none; }
+.stage-right { position: absolute; right: 14px; top: 14px; z-index: 4;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.cycle-read { padding: 9px 16px; display: flex; gap: 10px; align-items: center;
   i { font-style: normal; font-size: 11px; color: var(--text-2); }
   b { font-size: 19px; color: var(--cyan); }
   .soh { color: var(--green); } }
+.view-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; }
+.view-hint { font-size: 11px; color: var(--text-3); letter-spacing: 0.02em; }
 
 .side { display: flex; flex-direction: column; gap: 12px; }
-.ctrl-tower { display: flex; flex-direction: column; gap: 12px; }
+.ctrl-tower { display: flex; flex-direction: column; gap: 12px; max-height: var(--stage-h); overflow-y: auto; padding-right: 2px; }
 .pm-row { display: flex; gap: 8px;
   .btn-ghost { padding: 5px 12px; font-size: 12px; } }
-.mech-card { padding: 18px;
+.mech-card { padding: 15px 16px;
   .mech-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   h4 { font-size: 15.5px; color: var(--text-1); display: flex; align-items: center; }
-  .term { display: block; font-style: normal; font-size: 11.5px; color: var(--text-2); margin-top: 4px; }
-  dl { margin-top: 12px; display: grid; grid-template-columns: 84px 1fr; gap: 8px 10px;
+  .term { display: block; font-style: normal; font-size: 11.5px; color: var(--text-2); margin-top: 3px; }
+  dl { margin-top: 10px; display: grid; grid-template-columns: 84px 1fr; gap: 7px 10px;
     dt { font-size: 12px; color: var(--blue); }
-    dd { font-size: 12.5px; color: var(--text-2); line-height: 1.7; } }
+    dd { font-size: 12.5px; color: var(--text-2); line-height: 1.62; } }
   .pro { margin-top: 14px; border-top: 1px solid var(--hairline); padding-top: 12px;
     .eq { font-size: 15px; color: var(--cyan); background: rgba(34,211,238,0.07); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; }
     p { font-size: 12.5px; color: var(--text-2); line-height: 1.8; margin-bottom: 6px; b { color: var(--text-1); } }
@@ -639,14 +695,18 @@ onBeforeUnmount(() => {
 .inv { padding: 14px 16px;
   .inv-head { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-2); b { color: var(--cyan); } }
   .inv-track { height: 8px; border-radius: 4px; background: rgba(77,168,255,0.1); margin-top: 8px; overflow: hidden; }
-  .inv-fill { height: 100%; background: linear-gradient(90deg, #34d399, #22d3ee); border-radius: 4px; transition: width 0.3s; }
+  .inv-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--blue)); border-radius: 4px; transition: width 0.3s; }
   .inv-note { font-size: 11px; color: var(--text-3); margin-top: 7px; line-height: 1.6; } }
 
-.ctrl { padding: 16px; display: flex; flex-direction: column; gap: 12px;
+.ctrl { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+  // "循环播放"这个 checkbox 原先没有任何样式：`.switch` 只在 DataLabView / PrincipleView
+  // 的 scoped 块里定义过，跨组件不生效，于是它渲染成系统原生复选框，和全站控件不是一套皮。
+  .switch { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); cursor: pointer;
+    input { accent-color: var(--blue); width: 15px; height: 15px; } }
   .slider-row { display: flex; align-items: center; gap: 12px;
     input { flex: 1; }
     .pct { color: var(--cyan); min-width: 46px; text-align: right; font-size: 17px; } }
-  .caliber { font-size: 11px; color: var(--text-3); line-height: 1.6; }
+  .caliber { font-size: 11px; color: var(--text-3); line-height: 1.52; }
   .milestones { display: flex; gap: 6px; flex-wrap: wrap;
     .sm { padding: 4px 10px; font-size: 11.5px; } }
   .play-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -654,10 +714,10 @@ onBeforeUnmount(() => {
     .step-group { display: flex; gap: 6px; }
     .icon { width: 36px; height: 36px; justify-content: center; font-size: 12px; }
     .loop { margin-left: auto; font-size: 12.5px; } }
-  .speeds { display: flex; align-items: center; gap: 6px; padding-top: 10px; border-top: 1px solid var(--hairline);
+  .speeds { display: flex; align-items: center; gap: 6px; padding-top: 8px; border-top: 1px solid var(--hairline);
     .speeds-label { font-size: 11.5px; color: var(--text-3); margin-right: 2px; }
     .btn-ghost { padding: 5px 12px; font-size: 12px; } }
-  .summary { font-size: 12px; color: var(--green); background: rgba(52,211,153,0.08); padding: 8px 12px; border-radius: 8px;
+  .summary { font-size: 12px; color: var(--cyan); background: rgba(34,211,238,0.08); padding: 8px 12px; border-radius: 8px;
     &.node-flash { color: var(--amber); background: rgba(245,158,11,0.08); } } }
 
 .charts { padding: 18px; }
@@ -667,7 +727,9 @@ onBeforeUnmount(() => {
 .chart-caliber { margin-top: 8px; font-size: 11px; color: var(--text-3); }
 @media (max-width: 1080px) {
   .obs { grid-template-columns: 1fr; }
-  .stage { height: 480px; }
+  .stage { height: clamp(340px, 56vh, 470px); }
+  .ctrl-tower { max-height: none; overflow: visible; padding-right: 0; }
   .info-row { grid-template-columns: 1fr; }
+  .view-hint { display: none; }
 }
 </style>
