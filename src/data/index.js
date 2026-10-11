@@ -15,6 +15,9 @@ export function loadBattery(id) {
 export const NASA_IDS = Object.keys(NASA)
 
 // 电池外形数据（第 2 页 · 板块 A）
+// ⚠️ dim 字段目前**没有任何地方在用**（页面只显示下面的 size 文案）。
+//    18650 / 21700 的 dim 是真实标称尺寸；方形与软包的 dim 只是示意量级，
+//    现实中这两种封装尺寸不统一。**不要**把 dim 当规格渲染到界面上。
 export const batteryShapes = [
   {
     key: '18650', name: '18650 圆柱', size: '直径 18 mm × 高 65 mm',

@@ -2,6 +2,8 @@
 import { reactive, computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+// duration 单位是**秒**（各章停留/快速浏览的估算时长，七章相加 ≈ 320 秒 ≈ 5 分钟）。
+// 目录面板直接显示这个值，别改成"分"——会和表头的"约 5 分钟"差 60 倍。
 export const chapters = [
   { n: 1, path: '/', name: '进入电池生命实验室', brief: '认识观察对象 BS-01', subject: 'BS-01 概念标本', duration: 20 },
   { n: 2, path: '/types', name: '电芯展柜', brief: '外形 ≠ 化学体系', subject: 'BS-01 概念标本', duration: 35 },

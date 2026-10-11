@@ -71,6 +71,7 @@
           <div class="ro panel"><i>电压</i><b class="num">{{ voltage.toFixed(2) }}</b><u>V</u></div>
           <div class="ro panel"><i>功率</i><b class="num">{{ powerW.toFixed(1) }}</b><u>W</u></div>
         </div>
+        <p class="ocv-note">电压按线性化 OCV 估算（3.0 → 4.2 V）；真实开路电压曲线中段更平、两端更陡，这里是教学简化，不代表实测曲线。电流按倍率取 1C 的整数倍（BS-01 为 21700 / 5 Ah，1C = 5.0 A）。</p>
 
         <!-- 阶段解释卡（三层固定结构） -->
         <transition name="fade-slide" mode="out-in">
@@ -164,17 +165,22 @@ const labelScreens = ref([])
 const modeName = computed(() => ({ idle: '静置', charge: '充电中', full: '已充满', discharge: '放电中' }[mode.value]))
 const stateHint = computed(() => ({ idle: '电路断开 · 热运动', charge: '外电源供能', full: '能量已储存', discharge: '负载做功' }[mode.value]))
 
-// SOC 与实验进度用固定演示关系（BS-01：5Ah 概念电芯，OCV 3.0-4.2V）
+// SOC 与实验进度用固定演示关系（BS-01：21700 / 5000 mAh 概念电芯，OCV 3.0-4.2V）
 const soc = computed(() => progress.value)
+// 1C 的定义就是"1 小时充满/放完额定容量所需电流"。BS-01 是第一页那枚 21700 概念电芯，
+// 额定容量 5000 mAh（见 HomeView 的 buildCylindricalCell({ capacity: 5000 })），
+// 所以 1C = 5.0 A。旧值 2.2 A 是早期 2.2 Ah 设定的残留，与页面上标注的"1C"矛盾（已订正）。
+const I1C = 5.0
 const cccv = computed(() => {
   // 充电末段电流衰减（CC-CV 概念）
   const p = progress.value
   return p > 0.85 ? Math.max(0.15, 1 - (p - 0.85) / 0.15 * 0.85) : 1
 })
 const currentA = computed(() => {
-  const I1C = 2.2
+  // 充放电都按所选倍率取 1C 的整数倍，不再另乘一个凭空的系数——
+  // 页面上按钮写的是 0.5C / 1C / 2C，读数就应该是 2.5 / 5.0 / 10.0 A。
   if (mode.value === 'charge') return +(I1C * rate.value * cccv.value).toFixed(2)
-  if (mode.value === 'discharge') return +(I1C * 1.27 * rate.value).toFixed(2)
+  if (mode.value === 'discharge') return +(I1C * rate.value).toFixed(2)
   return 0
 })
 const voltage = computed(() => {
@@ -518,7 +524,11 @@ onMounted(async () => {
 
     // 灯泡亮度 ∝ 功率；充电器指示
     const on = mode.value === 'discharge'
-    const powerNorm = Math.min(1, powerW.value / 14)
+    // 灯泡亮度 ∝ 放电功率。归一化基准取 2C 放电的典型功率
+    // （2C = 10 A，端电压约 3.5 V → ≈ 35 W），0.5C / 1C / 2C 三档亮度才拉得开。
+    // 若沿用旧的 14 W 基准，1C 以上一律顶到满亮度，倍率就看不出来了。
+    const P_REF = 35
+    const powerNorm = Math.min(1, powerW.value / P_REF)
     bulbMat.color.set(on ? new THREE.Color(0x333f55).lerp(new THREE.Color(0xffd166), 0.3 + powerNorm * 0.7) : 0x333f55)
     bulbGlow.intensity = on ? 7 * powerNorm : 0
     chargerMat.emissiveIntensity = charging && flowing ? 0.55 + 0.25 * rate.value : 0.12
@@ -614,6 +624,8 @@ onBeforeUnmount(() => {
     b { font-size: 23px; color: var(--text-1); }
     .cyan { color: var(--cyan); }
     u { text-decoration: none; display: block; font-size: 10.5px; color: var(--text-3); margin-top: 2px; } } }
+// 电压读数的常驻口径：这里是线性化 OCV，不是实测开路电压曲线，必须写清楚
+.ocv-note { font-size: 11px; color: var(--text-3); line-height: 1.6; }
 .explain { padding: 14px 16px;
   b { color: var(--blue); font-size: 14.5px; display: block; margin-bottom: 9px; }
   dl { display: grid; grid-template-columns: 86px 1fr; gap: 8px 10px;
@@ -702,6 +714,7 @@ onBeforeUnmount(() => {
   .deep-btn { min-height: 44px; padding: 8px 16px; font-size: 13px; }
   .rate-row .btn-ghost { min-height: 44px; min-width: 50px; }
   .rate-note { font-size: 12px; }
+  .ocv-note { font-size: 12px; }
   .advanced summary { min-height: 44px; display: flex; align-items: center; }
   .advanced .switch { min-height: 44px; align-items: center; }
   .advanced input[type='checkbox'] { width: 20px; height: 20px; }

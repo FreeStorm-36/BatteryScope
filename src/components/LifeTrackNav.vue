@@ -91,7 +91,7 @@
       <div v-if="sheetOpen" class="chapter-sheet" @click.self="sheetOpen = false">
         <div class="cs-panel" role="dialog" aria-modal="true" aria-label="章节目录">
           <div class="cs-head">
-            <span><i>共 {{ chapters.length }} 章 · 顺着看一遍约 5 分钟</i><b>章节目录</b></span>
+            <span><i>共 {{ chapters.length }} 章 · 快速浏览约 5 分钟</i><b>章节目录</b></span>
             <button type="button" class="cs-close" aria-label="关闭目录" @click="sheetOpen = false">
               <IconGlyph name="close" :size="18" />
             </button>
@@ -109,7 +109,9 @@
                 <b>{{ c.name }}</b>
                 <i>{{ c.brief }}</i>
               </span>
-              <span class="cs-dur num">{{ c.duration }} 分</span>
+              <!-- 单位是"秒"不是"分"：各章相加 320 秒 ≈ 5.3 分钟，与表头"约 5 分钟"一致。
+                   旧版标成"分"会与表头差 60 倍（各章之和会读成 5 小时 20 分）。 -->
+              <span class="cs-dur num">≈ {{ c.duration }} 秒</span>
             </router-link>
           </nav>
         </div>
