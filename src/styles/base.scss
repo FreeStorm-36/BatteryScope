@@ -195,13 +195,18 @@ input[type='range'] {
   html { font-size: 14px; }
 }
 
-@media (max-width: 760px) {
+// ── 手机断点：全站统一用 767px ──────────────────────────────────
+// 桌面端与平板（≥768）完全不受影响，所有移动端改造都收在这个断点里。
+@media (max-width: 767px) {
   .head .corner {
     position: static !important;
     display: flex !important;
     flex-wrap: wrap;
     margin-top: 12px;
   }
+  // 滑块的轨道视觉上是一条细线，但元素高度必须撑到 44px ——
+  // 否则手指按准的难度很高（移动端体检里实测只有 4px）。
+  input[type='range'] { height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

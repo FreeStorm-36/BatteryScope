@@ -1,5 +1,7 @@
 <template>
   <header class="site-header">
+    <!-- 宽屏：品牌 + 全部章节 + 当前对象读数。三者在 393px 里装不下，
+         所以窄屏整套隐藏，换成下面的 nav-compact（见样式里的 767px 断点）。 -->
     <div class="nav-row">
       <router-link to="/" class="brand" aria-label="返回 BatteryScope 首页">
         <span class="brand-mark" aria-hidden="true">
@@ -19,7 +21,7 @@
           class="chapter-link"
           :class="{ active: i === current, done: i < current }"
         >
-          <span class="num">{{ String(c.n).padStart(2, '0') }}</span>
+          <span class="num">{{ pad(c.n) }}</span>
           <b>{{ shortNames[i] }}</b>
         </router-link>
       </nav>
@@ -29,6 +31,43 @@
         <span class="status-copy"><i>当前对象</i><b>{{ ch?.subject }}</b></span>
         <span class="counter num">{{ current + 1 }}/07</span>
       </div>
+    </div>
+
+    <!-- 窄屏：上一章 / 当前章（点开目录）/ 下一章。
+         7 个章节横向排不进一块手机屏，改成"顺着章节叙事翻页"，
+         和下方 energy-rail 的进度语言是一套。 -->
+    <div class="nav-compact">
+      <router-link
+        v-if="prev"
+        class="nc-edge"
+        :to="prev.path"
+        :aria-label="`上一章：${prev.name}`"
+      >
+        <IconGlyph name="prev" :size="18" />
+      </router-link>
+      <span v-else class="nc-edge is-empty" aria-hidden="true"></span>
+
+      <button
+        type="button"
+        class="nc-current"
+        :aria-expanded="sheetOpen"
+        aria-haspopup="dialog"
+        @click="sheetOpen = true"
+      >
+        <span class="nc-num num">{{ pad(current + 1) }}</span>
+        <b>{{ shortNames[current] }}</b>
+        <IconGlyph name="down" :size="14" />
+      </button>
+
+      <router-link
+        v-if="next"
+        class="nc-edge"
+        :to="next.path"
+        :aria-label="`下一章：${next.name}`"
+      >
+        <IconGlyph name="next" :size="18" />
+      </router-link>
+      <span v-else class="nc-edge is-empty" aria-hidden="true"></span>
     </div>
 
     <div class="energy-rail" aria-hidden="true">
@@ -43,18 +82,74 @@
       <span class="li-marker" :style="{ left: `${progress}%` }"></span>
     </div>
   </header>
+
+  <!-- 章节目录：必须 Teleport 出 header。header 上的 backdrop-filter 会创建
+       containing block，内部任何 position:fixed 都会转而相对 header 定位，
+       遮罩就盖不住整屏了。 -->
+  <Teleport to="body">
+    <transition name="sheet">
+      <div v-if="sheetOpen" class="chapter-sheet" @click.self="sheetOpen = false">
+        <div class="cs-panel" role="dialog" aria-modal="true" aria-label="章节目录">
+          <div class="cs-head">
+            <span><i>共 {{ chapters.length }} 章 · 顺着看一遍约 5 分钟</i><b>章节目录</b></span>
+            <button type="button" class="cs-close" aria-label="关闭目录" @click="sheetOpen = false">
+              <IconGlyph name="close" :size="18" />
+            </button>
+          </div>
+          <nav class="cs-list">
+            <router-link
+              v-for="(c, i) in chapters"
+              :key="c.path"
+              :to="c.path"
+              class="cs-item"
+              :class="{ active: i === current, done: i < current }"
+            >
+              <span class="cs-num num">{{ pad(c.n) }}</span>
+              <span class="cs-body">
+                <b>{{ c.name }}</b>
+                <i>{{ c.brief }}</i>
+              </span>
+              <span class="cs-dur num">{{ c.duration }} 分</span>
+            </router-link>
+          </nav>
+        </div>
+      </div>
+    </transition>
+  </Teleport>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { chapters } from '../stores/tour.js'
+import IconGlyph from './IconGlyph.vue'
 
 const route = useRoute()
 const shortNames = ['首页', '结构', '工作', '老化', '数据', '模型', '预测']
 const current = computed(() => (route.meta.chapter ?? 1) - 1)
 const ch = computed(() => chapters[current.value])
 const progress = computed(() => (current.value / (chapters.length - 1)) * 100)
+const pad = (n) => String(n).padStart(2, '0')
+
+const prev = computed(() => chapters[current.value - 1] || null)
+const next = computed(() => chapters[current.value + 1] || null)
+
+const sheetOpen = ref(false)
+
+// 跳转后自动收起，否则点完目录还停在遮罩上
+watch(() => route.fullPath, () => { sheetOpen.value = false })
+
+// 抽屉展开时锁住页面滚动，避免背景跟着滑
+watch(sheetOpen, (open) => { document.body.style.overflow = open ? 'hidden' : '' })
+
+function onKeydown(e) {
+  if (e.key === 'Escape') sheetOpen.value = false
+}
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  document.body.style.overflow = ''
+})
 </script>
 
 <style scoped lang="scss">
@@ -123,18 +218,97 @@ const progress = computed(() => (current.value / (chapters.length - 1)) * 100)
   background: #d9fbff; border: 2px solid var(--cyan); box-shadow: 0 0 10px rgba(34,211,238,.6);
   transition: left .7s cubic-bezier(.2,.7,.3,1);
 }
+
+/* ── 窄屏顶栏：默认不参与布局，只在 767px 以下接管 ── */
+.nav-compact {
+  display: none;
+  width: calc(100% - 28px); height: 60px; margin: 0 auto;
+  align-items: center; gap: 8px;
+}
+.nc-edge {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;              /* 触摸目标下限 44px */
+  display: grid; place-items: center;
+  border: 1px solid var(--hairline); border-radius: 12px;
+  color: var(--text-2); text-decoration: none;
+  background: rgba(255, 255, 255, 0.035);
+  transition: background 0.18s ease, color 0.18s ease;
+  &:active { background: rgba(77, 168, 255, 0.16); color: var(--text-1); }
+  /* 首章没有上一章、末章没有下一章：占位保持三格宽度稳定，不做成禁用态按钮 */
+  &.is-empty { visibility: hidden; }
+}
+.nc-current {
+  flex: 1; min-width: 0; height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid rgba(77, 168, 255, 0.34); border-radius: 12px;
+  background: rgba(77, 168, 255, 0.1);
+  color: var(--text-1); font: inherit; cursor: pointer;
+  transition: background 0.18s ease;
+  &:active { background: rgba(77, 168, 255, 0.2); }
+  .nc-num { font-size: 12px; color: var(--cyan); }
+  b { font-size: 14px; font-weight: 500; white-space: nowrap; }
+  svg { color: var(--text-3); flex: 0 0 auto; }
+}
+
+/* ── 章节目录抽屉 ── */
+.chapter-sheet {
+  position: fixed; inset: 0; z-index: 180;
+  display: flex; align-items: flex-end;
+  background: rgba(4, 8, 16, 0.62);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.cs-panel {
+  width: 100%; max-height: 84vh; overflow-y: auto;
+  padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: rgba(11, 17, 30, 0.98);
+  border-top: 1px solid var(--hairline);
+  box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.5);
+}
+.cs-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 14px; padding: 0 4px;
+  span i { display: block; font-style: normal; font-size: 12px; color: var(--text-3); }
+  span b { display: block; margin-top: 3px; font-size: 16px; font-weight: 500; color: var(--text-1); }
+}
+.cs-close {
+  flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center;
+  border: 1px solid var(--hairline); border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04); color: var(--text-2); cursor: pointer;
+  &:active { background: rgba(255, 255, 255, 0.1); }
+}
+.cs-list { display: flex; flex-direction: column; gap: 6px; }
+.cs-item {
+  display: flex; align-items: center; gap: 12px;
+  min-height: 58px; padding: 10px 14px;
+  border: 1px solid transparent; border-radius: 12px;
+  color: var(--text-2); text-decoration: none;
+  .cs-num { flex: 0 0 20px; font-size: 13px; color: var(--text-3); }
+  .cs-body {
+    flex: 1; min-width: 0;
+    b { display: block; font-size: 15px; font-weight: 500; color: var(--text-1); }
+    i { display: block; margin-top: 3px; font-style: normal; font-size: 12.5px; color: var(--text-3); }
+  }
+  .cs-dur { flex: 0 0 auto; font-size: 12px; color: var(--text-3); }
+  &.done .cs-num { color: var(--blue); }
+  &.active { border-color: rgba(77, 168, 255, 0.5); background: rgba(77, 168, 255, 0.1); }
+}
+.sheet-enter-active, .sheet-leave-active { transition: opacity 0.22s ease; }
+.sheet-enter-from, .sheet-leave-to { opacity: 0; }
+.sheet-enter-active .cs-panel { transition: transform 0.28s cubic-bezier(0.2, 0.7, 0.3, 1); }
+.sheet-leave-active .cs-panel { transition: transform 0.2s ease; }
+.sheet-enter-from .cs-panel, .sheet-leave-to .cs-panel { transform: translateY(100%); }
+
 @media (max-width: 1080px) {
   .nav-row { grid-template-columns: auto 1fr auto; gap: 12px; }
   .chapter-link { padding-inline: 7px; .num { display: none; } }
   .brand i, .status-copy { display: none; }
 }
-@media (max-width: 720px) {
-  .nav-row { width: calc(100% - 28px); height: 62px; grid-template-columns: auto 1fr auto; }
-  .brand { .brand-mark { width: 32px; height: 32px; } b { font-size: 13px; } }
-  .chapter-links { justify-self: end; max-width: calc(100vw - 175px); overflow-x: auto; scrollbar-width: none; }
-  .chapter-links::-webkit-scrollbar { display: none; }
-  .chapter-link { padding: 9px 7px; b { font-size: 11px; } }
-  .nav-status .status-dot { display: none; }
+@media (max-width: 767px) {
+  /* 三段式在手机上装不下（实测章节导航会侵入品牌区约 40px），整块撤掉换翻页式 */
+  .nav-row { display: none; }
+  .nav-compact { display: flex; }
   .energy-rail { width: calc(100% - 28px); }
 }
 </style>

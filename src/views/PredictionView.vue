@@ -411,9 +411,17 @@ onBeforeUnmount(() => {
       i { font-style: normal; font-size: 11.5px; color: var(--text-3); } }
     .a-note { font-size: 12px; color: var(--text-2); line-height: 1.7; margin-top: 6px; }
     .a-fit { font-size: 11.5px; color: var(--text-3); display: block; margin-top: 8px; } } }
-@media (max-width: 900px) {
-  .quiz, .stage, .answers { grid-template-columns: 1fr; }
-  .route-tabs { grid-template-columns: 1fr; }
+@media (max-width: 1080px) {
+  .quiz, .stage, .answers { grid-template-columns: minmax(0, 1fr); }
+  .route-tabs { grid-template-columns: minmax(0, 1fr); }
   .stage-right { border-left: none; padding-left: 0; }
+}
+
+/* 手机：按钮撑到 44px，偏小的说明文字抬到 12px */
+@media (max-width: 767px) {
+  .btn-ghost { min-height: 44px; }
+  .btn-primary { min-height: 48px; }
+  .viz-sub, .viz-gru .g-dot { font-size: 12px; }
+  .corner, .q-tag, .q-note, .viz-label, .a-fit { font-size: 12px; }
 }
 </style>

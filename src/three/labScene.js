@@ -56,7 +56,10 @@ export function createLabScene(container, {
   camera.position.set(...cameraPos)
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)) // 压低 DPR 减轻 GPU 负担（Bloom 场景实测易触发 context lost）
+  // 手机设备像素比通常是 3，全量渲染 + Bloom 对中低端机压力大，窄屏再压低一档
+  // （画质肉眼差别很小，GPU 负担明显下降）。桌面维持 1.5。
+  const dprOf = () => Math.min(window.devicePixelRatio, container.clientWidth < 768 ? 1.25 : 1.5)
+  renderer.setPixelRatio(dprOf()) // 压低 DPR 减轻 GPU 负担（Bloom 场景实测易触发 context lost）
   renderer.setSize(container.clientWidth, container.clientHeight)
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 0.95
@@ -173,13 +176,26 @@ export function createLabScene(container, {
     ctrl.update()
   }
 
+  // 触屏滚动穿透：OrbitControls 构造时会把 canvas 的 touch-action 设成 'none'，
+  // 于是手指在舞台上纵向滑动不会滚动页面 —— 手机上舞台占了大半屏，
+  // 用户想在画面上翻页，实际一直在转模型（"划不动"）。窄屏改成 'pan-y'：
+  // 纵向滑动交还浏览器翻页，横向滑动照旧旋转模型，双指仍可缩放平移。
+  // 桌面用鼠标时不受影响（滚轮与拖拽都不看 touch-action）。
+  const syncTouchAction = () => {
+    const narrow = container.clientWidth > 0 && container.clientWidth < 768
+    renderer.domElement.style.touchAction = narrow ? 'pan-y' : 'none'
+  }
+  syncTouchAction()
+
   let disposed = false
   const onResize = () => {
     if (disposed || !container.clientWidth) return
     camera.aspect = container.clientWidth / container.clientHeight
     camera.updateProjectionMatrix()
+    renderer.setPixelRatio(dprOf())
     renderer.setSize(container.clientWidth, container.clientHeight)
     composer?.setSize(container.clientWidth, container.clientHeight)
+    syncTouchAction()
   }
   window.addEventListener('resize', onResize)
 

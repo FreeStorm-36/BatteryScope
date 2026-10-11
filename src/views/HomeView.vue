@@ -432,14 +432,14 @@ h1 {
   p { color: var(--text-2); font-size: 11.5px; }
   a { color: var(--blue); font-size: 11.5px; text-decoration: none; white-space: nowrap; }
 }
-@media (max-width: 1040px) {
+@media (max-width: 1080px) {
   .hero { grid-template-columns: 1fr; padding-top: 138px; }
   .observation-stage { min-height: 430px; height: 56vh; }
   .journey-grid { grid-template-columns: repeat(2, 1fr); }
   .journey-card:nth-child(2) { border-right: 0; }
   .journey-card:nth-child(-n+2) { border-bottom: 1px solid var(--hairline); }
 }
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .hero, .journey { width: calc(100% - 36px); }
   .hero { padding-top: 106px; gap: 38px; }
   h1 { font-size: clamp(29px, 9vw, 42px); }
@@ -450,6 +450,11 @@ h1 {
   .journey-grid { grid-template-columns: 1fr; }
   .journey-card { border-right: 0; border-bottom: 1px solid var(--hairline); }
   .journey-card:last-child { border-bottom: 0; }
-  .evidence-boundary { grid-template-columns: auto 1fr; a { grid-column: 2; } }
+  .evidence-boundary { grid-template-columns: auto 1fr;
+    a { grid-column: 2; min-height: 44px; display: inline-flex; align-items: center; } }
+
+  /* 手机：几处 8.5—10.5px 的读数/说明文字基本读不出来，抬到 12px */
+  .hero-metrics span, .stage-head b, .scan-tag, .console dl div,
+  .stage-note, .journey-card .step, .console-title i { font-size: 12px; }
 }
 </style>

@@ -26,7 +26,10 @@
             <button class="btn-ghost view-reset" title="恢复到初始角度与距离" @click="resetView">
               <IconGlyph name="reset" /> 重置视角
             </button>
-            <p class="view-hint">拖拽旋转 · 滚轮缩放 · 右键平移</p>
+            <p class="view-hint">
+              <span class="vh-mouse">拖拽旋转 · 滚轮缩放 · 右键平移</span>
+              <span class="vh-touch">单指旋转 · 双指缩放与平移</span>
+            </p>
           </div>
         </div>
 
@@ -557,7 +560,7 @@ onBeforeUnmount(() => {
   .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
 }
 .bench { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; }
-.stage { position: relative; height: var(--stage-h); overflow: hidden; }
+.stage { position: relative; height: var(--stage-h); overflow: hidden; min-width: 0; }
 .three-box { position: absolute; inset: 0; cursor: grab; }
 
 .legend { position: absolute; left: 16px; top: 14px; display: flex; flex-direction: column; gap: 7px; z-index: 4;
@@ -576,7 +579,8 @@ onBeforeUnmount(() => {
 }
 .view-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 .view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; }
-.view-hint { font-size: 11px; color: var(--text-3); letter-spacing: 0.02em; }
+.view-hint { font-size: 11px; color: var(--text-3); letter-spacing: 0.02em;
+  .vh-touch { display: none; } }
 .label-tag {
   position: absolute; padding: 2px 10px; font-size: 11.5px; color: var(--cyan); z-index: 3;
   border-color: rgba(34,211,238,0.3); white-space: nowrap; pointer-events: none;
@@ -638,10 +642,71 @@ onBeforeUnmount(() => {
 .bridge {
   display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 26px;
   p { font-size: 15px; color: var(--text-1); } }
-@media (max-width: 900px) {
-  .bench { grid-template-columns: 1fr; }
+/* 平板 / 窄笔记本：双栏塌成单栏。舞台仍是"画布铺满 + 浮层绝对定位"的桌面思路 */
+@media (max-width: 1080px) {
+  /* minmax(0, 1fr) 而不是 1fr：`1fr` 的最小值是 auto（min-content），
+     舞台里的画布/滑杆一旦有固有宽度就把整列撑破 —— 实测手机上 .stage 宽 393px
+     而可用只有 353px，整页被顶出横向溢出。 */
+  .bench { grid-template-columns: minmax(0, 1fr); }
   .stage { height: clamp(340px, 56vh, 440px); }
   .controls { max-height: none; overflow: visible; padding-right: 0; }
   .view-hint { display: none; }
+}
+
+/* 手机：画布独占舞台、零遮挡；状态 / 视角工具 / 进度轴 / 图例依次排到画布下方。
+   桌面那套浮层在 353px 宽的舞台里会互相压叠并把回路模型挤到中间一小块。 */
+@media (max-width: 767px) {
+  .principle { --stage-h: clamp(280px, 42vh, 380px); }
+
+  .stage {
+    display: flex; flex-direction: column; gap: 10px;
+    height: auto; padding: 12px;
+  }
+  .three-box {
+    position: static; order: 1;
+    height: var(--stage-h);
+    border-radius: 12px; overflow: hidden;
+  }
+  .stage-right {
+    position: static; order: 2; width: 100%;
+    flex-direction: column; align-items: stretch; gap: 8px;
+  }
+  .state-tag { padding: 8px 14px; text-align: left;
+    b { font-size: 17px; }
+    i { font-size: 12px; } }
+  .view-tools { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+  .view-reset { min-height: 44px; padding: 8px 14px; font-size: 12.5px; }
+  .view-hint { display: block; font-size: 12px;
+    .vh-mouse { display: none; }
+    .vh-touch { display: inline; } }
+  .timeline {
+    position: static; order: 3; width: 100%;
+    padding: 12px 14px 20px;
+  }
+  .legend {
+    position: static; order: 4;
+    flex-direction: row; flex-wrap: wrap; gap: 8px;
+    .lg { font-size: 12.5px; padding: 6px 13px; }
+  }
+  .label-tag { font-size: 12px; }
+  .kp-row { height: 46px;
+    .kp { min-height: 44px; min-width: 44px; }
+    .kp-name { font-size: 12px; } }
+
+  /* 触摸目标与可读性：手机上按钮偏小极易点错，统一撑到 44px；
+     10.5—11.5px 的次要文字提到 12px。 */
+  .sub-row { flex-wrap: wrap;
+    .btn-ghost { min-height: 44px; }
+    .icon { width: 44px; height: 44px; } }
+  .speed .btn-ghost { min-height: 44px; min-width: 46px; }
+  .deep-btn { min-height: 44px; padding: 8px 16px; font-size: 13px; }
+  .rate-row .btn-ghost { min-height: 44px; min-width: 50px; }
+  .rate-note { font-size: 12px; }
+  .advanced summary { min-height: 44px; display: flex; align-items: center; }
+  .advanced .switch { min-height: 44px; align-items: center; }
+  .advanced input[type='checkbox'] { width: 20px; height: 20px; }
+  .readouts .ro {
+    i { font-size: 12px; }
+    u { font-size: 12px; } }
 }
 </style>

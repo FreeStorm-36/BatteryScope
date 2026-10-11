@@ -30,7 +30,10 @@
             <button class="btn-ghost view-reset" title="恢复到初始角度与距离" @click="resetView">
               <IconGlyph name="reset" /> 重置视角
             </button>
-            <p class="view-hint">拖拽旋转 · 滚轮缩放 · 右键平移</p>
+            <p class="view-hint">
+              <span class="vh-mouse">拖拽旋转 · 滚轮缩放 · 右键平移</span>
+              <span class="vh-touch">单指旋转 · 双指缩放与平移</span>
+            </p>
           </div>
 
           <!-- 返回整体 -->
@@ -50,8 +53,12 @@
         </div>
       </div>
 
-      <!-- 部件详情抽屉 -->
-      <aside class="drawer panel">
+      <!-- 部件详情抽屉。手机上选中部件时整个变成底部上滑面板（.is-sheet），
+           因为窄屏里右侧根本没有"旁边"这块地方给抽屉，放文档流下方又得滚动才看得见。 -->
+      <aside class="drawer panel" :class="{ 'is-sheet': !!selected }">
+        <button v-if="selected" class="sheet-close" aria-label="收起详情，返回整体视角" @click="deselect">
+          <IconGlyph name="down" :size="16" /> 收起详情
+        </button>
         <transition name="fade-slide" mode="out-in">
           <div v-if="!selected" key="idle" class="drawer-idle">
             <p class="idle-title">数字展柜</p>
@@ -598,7 +605,7 @@ onBeforeUnmount(() => {
 }
 .showcase { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; align-items: start; }
 .stage-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.stage { position: relative; height: var(--stage-h); overflow: hidden; }
+.stage { position: relative; height: var(--stage-h); overflow: hidden; min-width: 0; }
 .three-box { position: absolute; inset: 0; cursor: grab; }
 .guide-svg { position: absolute; inset: 0; pointer-events: none; z-index: 5;
   // ⚠️ width/height 必须有。<svg> 是替换元素，给 position:absolute + inset:0 并不会
@@ -615,7 +622,8 @@ onBeforeUnmount(() => {
   display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .size-tag { font-size: 12px; color: var(--text-2); padding: 6px 12px; }
 .view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; }
-.view-hint { font-size: 11.5px; color: var(--text-3); letter-spacing: 0.02em; }
+.view-hint { font-size: 11.5px; color: var(--text-3); letter-spacing: 0.02em;
+  .vh-touch { display: none; } }
 // 拆解控制条：位于舞台下方，是常规文档流的一行，不再遮挡 3D 画面
 .teardown {
   display: flex; align-items: center; gap: 10px; padding: 9px 14px;
@@ -628,6 +636,8 @@ onBeforeUnmount(() => {
   .td-caption { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 .back-btn { position: absolute; right: 16px; bottom: 16px; z-index: 4; }
+// 只在手机上出现的"收起详情"按钮（配合底部上滑面板），桌面隐藏
+.sheet-close { display: none; }
 
 .drawer { padding: 18px 20px; height: var(--stage-h); display: flex; flex-direction: column; overflow-y: auto; }
 .drawer-idle {
@@ -664,11 +674,85 @@ onBeforeUnmount(() => {
 .radar-box { .radar { height: 300px; }
   .caliber { margin-top: 8px; font-size: 11.5px; color: var(--text-3); text-align: center; } }
 
-@media (max-width: 960px) {
-  .showcase, .chem-body { grid-template-columns: 1fr; }
+/* 平板 / 窄笔记本：双栏塌成单栏。舞台仍是"画布铺满 + 浮层绝对定位"的桌面思路 */
+@media (max-width: 1080px) {
+  .showcase, .chem-body { grid-template-columns: minmax(0, 1fr); }
   .stage { height: clamp(340px, 56vh, 440px); }
   .drawer { height: auto; min-height: 0; overflow: visible; }
-  // 窄屏舞台本来就矮，操作提示会压住模型，收掉
   .view-hint { display: none; }
+}
+
+/* 手机：画布独占舞台；尺寸读数 / 视角工具 / 形态切换排到画布下方；
+   选中部件时抽屉变成底部上滑面板。 */
+@media (max-width: 767px) {
+  .types { --stage-h: clamp(280px, 42vh, 380px); }
+
+  .stage {
+    display: flex; flex-direction: column; gap: 10px;
+    height: auto; padding: 12px;
+  }
+  .three-box {
+    position: static; order: 1;
+    height: var(--stage-h);
+    border-radius: 12px; overflow: hidden;
+  }
+  /* 引导线是"部件 → 右侧抽屉"的连接线。手机上抽屉已挪到底部上滑面板，
+     连接目标不存在了，留着只会横穿画面。而且它的坐标按舞台像素算，
+     舞台改成 flex 后也不再对得上。 */
+  .guide-svg { display: none; }
+
+  .stage-tools {
+    position: static; order: 2; width: 100%;
+    flex-direction: row; flex-wrap: wrap; align-items: center;
+    justify-content: space-between; gap: 8px;
+  }
+  .size-tag { font-size: 12.5px; padding: 8px 13px; }
+  .view-reset { min-height: 44px; padding: 8px 14px; font-size: 12.5px; }
+  .view-hint { display: block; flex-basis: 100%; font-size: 12px;
+    .vh-mouse { display: none; }
+    .vh-touch { display: inline; } }
+
+  .shape-row {
+    position: static; order: 3; width: 100%;
+    .btn-ghost { flex: 1; min-height: 46px; font-size: 13px; }
+  }
+  /* 桌面那个角落里的"返回整体"由面板自带的"收起详情"取代 */
+  .back-btn { display: none; }
+
+  /* 抽屉 → 底部上滑面板（仅选中部件时） */
+  .drawer { padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .drawer.is-sheet {
+    position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 160;
+    max-height: 58vh; overflow-y: auto;
+    border-radius: 18px;
+    box-shadow: 0 -12px 44px rgba(0, 0, 0, 0.6);
+    animation: types-sheet-up 0.3s cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  .sheet-close {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; min-height: 44px; margin-bottom: 12px;
+    border: 1px solid var(--hairline); border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer;
+  }
+
+  .teardown {
+    .icon { width: 44px; height: 44px; }
+    .td-step { font-size: 12.5px; }
+    .td-caption { font-size: 12.5px; }
+  }
+
+  /* 化学体系对比区：tab 与"加入对比"按钮原来只有 30—39px 高 */
+  .chem { padding: 18px 16px; }
+  .chem-tabs .btn-ghost { min-height: 44px; padding: 8px 18px; font-size: 13px; }
+  .compare-row { flex-wrap: wrap;
+    .btn-ghost { min-height: 44px; padding: 8px 16px; } }
+  .chem-info .caliber, .chem-head .hint { font-size: 12px; }
+  .badge-line { font-size: 12px; }
+}
+
+@keyframes types-sheet-up {
+  from { transform: translateY(115%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 </style>

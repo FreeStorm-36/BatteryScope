@@ -651,7 +651,19 @@ onBeforeUnmount(() => {
     i { font-style: normal; font-size: 11.5px; color: var(--text-2); letter-spacing: 0.2em; }
     b { font-size: 22px; &.good { color: var(--green); } &.warn { color: var(--amber); } &.bad { color: var(--red); } } } }
 .sb-note { margin-top: 14px; font-size: 11.5px; color: var(--text-2); }
-@media (max-width: 900px) {
-  .labA, .sandbox { grid-template-columns: 1fr; }
+@media (max-width: 1080px) {
+  .labA, .sandbox { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 手机：按钮与开关的可点区域撑到 44px，偏小的说明文字抬到 12px */
+@media (max-width: 767px) {
+  .btn-ghost { min-height: 44px; }
+  .btn-primary { min-height: 48px; }
+  .switch { min-height: 44px; align-items: center; }
+  .switch input[type='checkbox'] { width: 20px; height: 20px; }
+  /* 这条必须写成 .trend-col .trend-src b：原样式嵌在 .trend-col 里，
+     编译后是三层选择器，只写两层会被它压过去（改了半天不生效的坑）。 */
+  .trend-col .trend-src b { font-size: 12px; }
+  .corner, .badge-guide span, .cond-note, .sb-note { font-size: 12px; }
 }
 </style>

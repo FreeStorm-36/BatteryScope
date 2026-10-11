@@ -35,7 +35,10 @@
             <button class="btn-ghost view-reset" title="回到当前尺度的初始机位" @click="resetView">
               <IconGlyph name="reset" /> 重置视角
             </button>
-            <p class="view-hint">拖拽旋转 · 滚轮缩放 · 右键平移</p>
+            <p class="view-hint">
+              <span class="vh-mouse">拖拽旋转 · 滚轮缩放 · 右键平移</span>
+              <span class="vh-touch">单指旋转 · 双指缩放与平移</span>
+            </p>
           </div>
         </div>
 
@@ -648,7 +651,7 @@ onBeforeUnmount(() => {
   .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
 }
 .obs { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; align-items: start; }
-.stage { position: relative; height: var(--stage-h); overflow: hidden; }
+.stage { position: relative; height: var(--stage-h); overflow: hidden; min-width: 0; }
 .three-box { position: absolute; inset: 0; cursor: grab; }
 .scale-row { position: absolute; left: 14px; top: 14px; display: flex; gap: 8px; z-index: 4;
   .btn-ghost { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 14px;
@@ -668,7 +671,8 @@ onBeforeUnmount(() => {
   .soh { color: var(--green); } }
 .view-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 .view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; }
-.view-hint { font-size: 11px; color: var(--text-3); letter-spacing: 0.02em; }
+.view-hint { font-size: 11px; color: var(--text-3); letter-spacing: 0.02em;
+  .vh-touch { display: none; } }
 
 .side { display: flex; flex-direction: column; gap: 12px; }
 .ctrl-tower { display: flex; flex-direction: column; gap: 12px; max-height: var(--stage-h); overflow-y: auto; padding-right: 2px; }
@@ -725,11 +729,70 @@ onBeforeUnmount(() => {
   .hint { font-size: 11.5px; color: var(--text-3); margin-left: auto; } }
 .chart-box { height: 300px; }
 .chart-caliber { margin-top: 8px; font-size: 11px; color: var(--text-3); }
+/* 平板 / 窄笔记本：双栏塌成单栏。舞台仍是"画布铺满 + 浮层绝对定位"的桌面思路 —— 这个宽度还放得下 */
 @media (max-width: 1080px) {
-  .obs { grid-template-columns: 1fr; }
+  .obs { grid-template-columns: minmax(0, 1fr); }
   .stage { height: clamp(340px, 56vh, 470px); }
   .ctrl-tower { max-height: none; overflow: visible; padding-right: 0; }
   .info-row { grid-template-columns: 1fr; }
   .view-hint { display: none; }
+}
+
+/* 手机：画布独占舞台、零遮挡；读数 / 尺度 / 机制 / 说明按层级排到画布下方。
+   桌面那套浮层在 353px 宽的舞台里会互相压叠并把模型挤没（实测"0%"与"粒"直接叠字），
+   所以这里把定位全部取消，改用 flex + order 重排，DOM 顺序不动。
+   桌面（≥768px）与平板观感完全不受影响。 */
+@media (max-width: 767px) {
+  .aging { --stage-h: clamp(280px, 42vh, 380px); }
+
+  .stage {
+    display: flex; flex-direction: column; gap: 10px;
+    height: auto; padding: 12px;
+  }
+  .three-box {
+    position: static; order: 1;
+    height: var(--stage-h);
+    border-radius: 12px; overflow: hidden;
+  }
+  .stage-right {
+    position: static; order: 2; width: 100%;
+    flex-direction: column; align-items: stretch; gap: 8px;
+  }
+  .cycle-read { justify-content: flex-start; padding: 8px 14px; gap: 9px;
+    i { font-size: 12px; }
+    b { font-size: 17px; } }
+  .view-tools { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+  .view-reset { min-height: 44px; padding: 8px 14px; font-size: 12.5px; }
+  .view-hint { display: block; font-size: 12px;
+    .vh-mouse { display: none; }
+    .vh-touch { display: inline; } }
+  .scale-row {
+    position: static; order: 3; width: 100%;
+    .btn-ghost { flex: 1; min-height: 48px; padding: 8px 10px;
+      b { font-size: 13px; }
+      i { font-size: 12px; } } }
+  .mech-row {
+    position: static; order: 4; width: 100%; max-width: none;
+    .btn-ghost { min-height: 44px; padding: 8px 13px; font-size: 12.5px; } }
+  .geom-note {
+    position: static; order: 5; max-width: none;
+    font-size: 12px; text-align: left;
+  }
+
+  /* 控制塔里的触摸目标统一撑到 44px —— 手机上按钮偏小极易点错 */
+  .ctrl {
+    .milestones .btn-ghost { min-height: 44px; padding: 8px 14px; font-size: 12.5px; }
+    .play-main { min-height: 48px; }
+    .step-group .btn-ghost { min-width: 48px; min-height: 48px; font-size: 12.5px; }
+    .speeds .btn-ghost { min-height: 44px; min-width: 52px; }
+    .switch { min-height: 44px; align-items: center; }
+    .switch input[type='checkbox'] { width: 20px; height: 20px; }
+    .caliber { font-size: 12px; }
+  }
+  .pm-row .btn-ghost { min-height: 44px; padding: 8px 16px; font-size: 13px; }
+  .mech-card .term { font-size: 12px; }
+  .chart-tabs .btn-ghost { min-height: 44px; padding: 8px 16px; font-size: 12.5px; }
+  .chart-tabs .hint, .chart-caliber { font-size: 12px; }
+  .finger-hint, .inv-note { font-size: 12px; }
 }
 </style>

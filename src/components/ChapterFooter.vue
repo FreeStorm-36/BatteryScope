@@ -72,10 +72,20 @@ const next = computed(() => chapters[idx.value + 1] || null)
   i { font-style: normal; }
   b { font-size: 9px; font-weight: 400; letter-spacing: .09em; }
 }
-@media (max-width: 900px) {
+@media (max-width: 1080px) {
   .inner { grid-template-columns: 1fr; border-bottom: 0; }
   .side.empty { display: none; }
   .conclusion { border: 1px solid var(--hairline); }
   .project-signature { grid-template-columns: 1fr; gap: 2px; }
+}
+/* 手机：页脚原来有几处 9—10.5px 的装饰文字，在手机上基本读不出来 */
+@media (max-width: 767px) {
+  .inner { padding: 0 20px; }
+  .side { min-height: 76px; padding: 14px 16px; }
+  .side i { font-size: 12px; }
+  .conclusion .label { font-size: 12px; letter-spacing: 0.22em; }
+  .project-signature { padding: 0 20px; font-size: 12px;
+    span { font-size: 13px; }
+    b { font-size: 11px; } }
 }
 </style>

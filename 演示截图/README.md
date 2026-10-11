@@ -29,3 +29,22 @@ MSYS_NO_PATHCONV=1 SHOT_BASE="http://127.0.0.1:5188/" \
 | 方法 | Theil–Sen 稳健斜率 + 单调指数外推 + 残差区间（可回测基线，不是 PINN） |
 
 > 上表为可回测的基线输出，不是训练过的神经网络预测；页面与文档口径保持一致。
+
+## 手机端对照图（`手机端/`）
+
+`手机端/m-*.png` 为各章的**手机首屏**（393×852，DPR 2），`手机端/m-*-full.png`
+为对应的**整页长图**，由 `scripts/audit-mobile.cjs` 从同一份 `dist/` 生成：
+
+```bash
+MSYS_NO_PATHCONV=1 SHOT_BASE="http://127.0.0.1:5188/" \
+  SHOT_OUT="<本目录绝对路径>/手机端/m-" \
+  node scripts/audit-mobile.cjs home="#/" types="#/types" principle="#/principle" \
+  aging="#/aging" datalab="#/datalab" prediction="#/prediction" ending="#/ending"
+```
+
+该脚本同时输出体检结论，**7 页必须全部达标**：横向溢出 0、无超宽元素、
+触摸目标全 ≥44px、无 <12px 字号、窄屏顶栏三格（上一章 / 当前章 / 下一章）互不重叠。
+可用 `MW=360 MH=780 node scripts/audit-mobile.cjs …` 复验小屏安卓。
+
+> 移动端样式集中在各文件的 `@media (max-width: 767px)` 里，平板档为 `max-width: 1080px`
+> （只做双栏塌单栏）。**全站只用 1080 / 767 两档断点**，桌面（≥768px）观感不受影响。

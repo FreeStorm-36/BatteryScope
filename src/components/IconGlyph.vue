@@ -6,6 +6,10 @@
     <path v-else-if="name === 'step'" d="m6 6 8 6-8 6zM17 6v12" />
     <path v-else-if="name === 'check'" d="m5 12 4 4L19 6" />
     <path v-else-if="name === 'alert'" d="M12 4 3 20h18L12 4Zm0 6v4m0 3v.1" />
+    <path v-else-if="name === 'prev'" d="m14 6-6 6 6 6" />
+    <path v-else-if="name === 'next'" d="m10 6 6 6-6 6" />
+    <path v-else-if="name === 'down'" d="m6 9 6 6 6-6" />
+    <path v-else-if="name === 'close'" d="M6 6l12 12M18 6L6 18" />
   </svg>
 </template>
 

@@ -299,11 +299,15 @@ onBeforeUnmount(() => { reset(); window.removeEventListener('resize', onChartRes
   .research { margin-top: 8px; font-size: 12.5px; color: var(--text-2); }
 }
 @keyframes chipIn { from { opacity: 0; transform: translateY(12px) scale(0.92); } }
-@media (max-width: 900px) {
-  .task { grid-template-columns: 1fr; }
+@media (max-width: 1080px) {
+  .task { grid-template-columns: minmax(0, 1fr); }
 }
-@media (max-width: 560px) {
-  .big-nums { grid-template-columns: 1fr; }
+@media (max-width: 767px) {
+  .big-nums { grid-template-columns: minmax(0, 1fr); }
   .chart { height: 300px; }
+  .btn-ghost { min-height: 44px; }
+  .btn-primary { min-height: 48px; }
+  .big-nums .bn u { font-size: 12px; }
+  .corner, .holdout-note, .verdict { font-size: 12px; }
 }
 </style>

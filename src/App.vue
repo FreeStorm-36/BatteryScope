@@ -38,7 +38,9 @@ watch(
   min-height: calc(100vh - 160px);
   box-sizing: border-box;
 }
-@media (max-width: 760px) {
-  .page, .page-full { padding: 82px 20px 0; }
+// 手机断点统一用 767px。窄屏顶栏换成"上一章 / 当前章 / 下一章"（高 60px + 进度条 10px），
+// 比桌面的 82px 矮，所以这里留 78px 就够 —— 原来写死 82px 会白多出一截空白。
+@media (max-width: 767px) {
+  .page, .page-full { padding: 78px 20px 0; }
 }
 </style>
