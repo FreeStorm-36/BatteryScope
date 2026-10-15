@@ -90,6 +90,9 @@
       </div>
     </div>
 
+    <VideoSlot id="ch07-holdout" />
+    <ChapterGoals :chapter="7" />
+
     <ChapterFooter conclusion="预测不是魔法，而是一步步从数据到规律的过程——这就是我们正在做的事。" />
   </div>
 </template>
@@ -100,6 +103,8 @@ import { initChart } from '../services/charts.js'
 import { loadBattery } from '../data/index.js'
 import { predictBatteryLife } from '../services/predictor.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
+import ChapterGoals from '../components/ChapterGoals.vue'
+import VideoSlot from '../components/VideoSlot.vue'
 import DataBadge from '../components/DataBadge.vue'
 import IconGlyph from '../components/IconGlyph.vue'
 

@@ -126,6 +126,10 @@
       </div>
     </transition>
 
+    <VideoSlot id="ch03-ion-path" />
+    <VideoSlot id="ch03-cccv" />
+    <ChapterGoals :chapter="3" />
+
     <ChapterFooter conclusion="锂离子走内部，电子走外部；两条不同的路，共同完成能量交换。" />
   </div>
 </template>
@@ -137,6 +141,8 @@ import { createLabScene, PALETTE, pool } from '../three/labScene.js'
 import { createCameraFly } from '../three/cameraFly.js'
 import { buildParticleFlow } from '../three/batteryModel.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
+import ChapterGoals from '../components/ChapterGoals.vue'
+import VideoSlot from '../components/VideoSlot.vue'
 import DataBadge from '../components/DataBadge.vue'
 import IconGlyph from '../components/IconGlyph.vue'
 

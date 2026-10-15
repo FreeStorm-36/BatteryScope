@@ -112,6 +112,9 @@
       </div>
     </div>
 
+    <VideoSlot id="ch02-teardown" />
+    <ChapterGoals :chapter="2" />
+
     <ChapterFooter conclusion="外形决定怎么装，化学决定怎么活——两者共同定义一块电池的命运。" />
   </div>
 </template>
@@ -126,6 +129,8 @@ import { createCameraFly } from '../three/cameraFly.js'
 import { buildCylindricalCell, buildTightJellyRoll, buildPrismaticCell, buildPouchCell, CELL_SPECS } from '../three/batteryModel.js'
 import { batteryShapes, chemistries } from '../data/index.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
+import ChapterGoals from '../components/ChapterGoals.vue'
+import VideoSlot from '../components/VideoSlot.vue'
 import DataBadge from '../components/DataBadge.vue'
 import IconGlyph from '../components/IconGlyph.vue'
 

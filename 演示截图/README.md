@@ -1,7 +1,7 @@
 # 截图说明
 
-本目录 7 张 `final-*.png` 由 `scripts/shots.cjs` 从**当前构建产物**（`dist/`）自动生成，
-统一 1600×1100 视口，对应 01 首页 → 07 预测七个章节，供快速查看整体视觉与版式。
+本目录 8 张 `final-*.png` 由 `scripts/shots.cjs` 从**当前构建产物**（`dist/`）自动生成，
+统一 1600×1100 视口，对应 01 首页 → 08 学习八个章节，供快速查看整体视觉与版式。
 
 重新生成：
 
@@ -10,7 +10,8 @@ node serve-dist.mjs                     # 另开一个终端，跑 dist，端口
 MSYS_NO_PATHCONV=1 SHOT_BASE="http://127.0.0.1:5188/" \
   SHOT_OUT="<本目录绝对路径>/final-" \
   node scripts/shots.cjs home="#/" types="#/types" principle="#/principle" \
-  aging="#/aging" datalab="#/datalab" prediction="#/prediction" ending="#/ending"
+  aging="#/aging" datalab="#/datalab" prediction="#/prediction" ending="#/ending" \
+  learn="#/learn"
 ```
 
 > 每次视觉或文案改版后都请重出这批图，否则截图会与新交付版不一致。
@@ -39,12 +40,17 @@ MSYS_NO_PATHCONV=1 SHOT_BASE="http://127.0.0.1:5188/" \
 MSYS_NO_PATHCONV=1 SHOT_BASE="http://127.0.0.1:5188/" \
   SHOT_OUT="<本目录绝对路径>/手机端/m-" \
   node scripts/audit-mobile.cjs home="#/" types="#/types" principle="#/principle" \
-  aging="#/aging" datalab="#/datalab" prediction="#/prediction" ending="#/ending"
+  aging="#/aging" datalab="#/datalab" prediction="#/prediction" ending="#/ending" \
+  learn="#/learn"
 ```
 
-该脚本同时输出体检结论，**7 页必须全部达标**：横向溢出 0、无超宽元素、
+该脚本同时输出体检结论，**8 页必须全部达标**：横向溢出 0、无超宽元素、
 触摸目标全 ≥44px、无 <12px 字号、窄屏顶栏三格（上一章 / 当前章 / 下一章）互不重叠。
 可用 `MW=360 MH=780 node scripts/audit-mobile.cjs …` 复验小屏安卓。
+
+> ⚠️ `audit-mobile.cjs` 单页就要 10 秒上下（第 08 章长图更久），
+> **不要与 `verify-app.cjs` / `diagnose-nav.cjs` / `verify-look-views.cjs` 并行跑** ——
+> 多个 headless 浏览器同时开会把机器拖满，脚本按固定毫秒等待就会误报失败。
 
 > 移动端样式集中在各文件的 `@media (max-width: 767px)` 里，平板档为 `max-width: 1080px`
 > （只做双栏塌单栏）。**全站只用 1080 / 767 两档断点**，桌面（≥768px）观感不受影响。

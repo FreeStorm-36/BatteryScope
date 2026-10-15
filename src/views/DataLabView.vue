@@ -154,6 +154,9 @@
       <p class="tag demo sb-note">环境因素趋势演示 · 工况→倍率映射为本站科普规则，非寿命预测模型 · 曲线形状与起伏来自 NASA PCoE 实测记录</p>
     </div>
 
+    <VideoSlot id="ch05-nasa" />
+    <ChapterGoals :chapter="5" />
+
     <ChapterFooter conclusion="真实曲线告诉我们电池怎样变老；因素—机制—趋势的链条帮助我们理解它为什么可能老得更快。" />
   </div>
 </template>
@@ -166,6 +169,8 @@ import { loadBattery, NASA_IDS, envRules, TREND_LEVELS } from '../data/index.js'
 // 由 scripts/gen-trend-template.cjs 自动提取生成，不要在页面里手写拟合公式
 import { SHAPE, SHAPE_N, RESID, SHAPE_META } from '../data/nasa/trendTemplate.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
+import ChapterGoals from '../components/ChapterGoals.vue'
+import VideoSlot from '../components/VideoSlot.vue'
 import DataBadge from '../components/DataBadge.vue'
 import IconGlyph from '../components/IconGlyph.vue'
 

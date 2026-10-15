@@ -90,6 +90,12 @@
       </div>
     </section>
 
+    <!-- 首页不是 flex 容器（它是 position:relative 的自定义布局），
+         所以这里必须自带一层带宽度与间距的容器，不能靠父级 gap。 -->
+    <div class="home-goals">
+      <ChapterGoals :chapter="1" />
+    </div>
+
     <ChapterFooter conclusion="同一观察对象将贯穿结构、工作、老化、真实数据与预测方法，避免把概念演示误认为实验结果。" />
   </main>
 </template>
@@ -99,6 +105,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import gsap from 'gsap'
 import * as THREE from 'three'
 import ChapterFooter from '../components/ChapterFooter.vue'
+import ChapterGoals from '../components/ChapterGoals.vue'
 import { createLabScene, PALETTE } from '../three/labScene.js'
 import { buildCylindricalCell, buildParticleFlow } from '../three/batteryModel.js'
 
@@ -111,7 +118,10 @@ const visibleTags = ref([])
 const parallaxStyle = ref({})
 
 const metrics = [
-  { value: '07', label: '连续章节' },
+  // 这里必须与实际章节数一致（tour.js 的 chapters 长度）。
+  // 2026-10-15 新增第 08 章「学习地图与资料来源」后由 07 改为 08 ——
+  // 首页自述数字对不上，是这类作品最容易露怯的地方。
+  { value: '08', label: '连续章节' },
   { value: '04', label: '真实电池样本' },
   { value: '03', label: '同任务模型路线' },
   { value: '80%', label: '教学参考线' }
@@ -314,6 +324,12 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .home { position: relative; min-height: 100vh; overflow: clip; }
+/* 首页的学习目标容器：宽度与 .journey 对齐（1240），自带上下间距。
+   它属于"内容之后、页脚之前"的位置，不影响首屏预算。 */
+.home-goals {
+  position: relative; z-index: 2;
+  width: min(1240px, calc(100% - 80px)); margin: 26px auto 40px;
+}
 .bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 .vignette {
   position: fixed; inset: 0; z-index: 1; pointer-events: none;
@@ -441,6 +457,7 @@ h1 {
 }
 @media (max-width: 767px) {
   .hero, .journey { width: calc(100% - 36px); }
+  .home-goals { width: calc(100% - 36px); margin: 22px auto 30px; }
   .hero { padding-top: 106px; gap: 38px; }
   h1 { font-size: clamp(29px, 9vw, 42px); }
   .hero-metrics { grid-template-columns: repeat(2, 1fr); }

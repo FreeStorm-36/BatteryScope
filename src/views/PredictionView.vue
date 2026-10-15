@@ -182,6 +182,9 @@
       </div>
     </div>
 
+    <VideoSlot id="ch06-methods" />
+    <ChapterGoals :chapter="6" />
+
     <ChapterFooter conclusion="物理模型从规律出发，数据模型从历史出发，融合模型尝试让规律与数据互相校正——同一道题，没有唯一最优解法。" />
   </div>
 </template>
@@ -191,6 +194,8 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { initChart } from '../services/charts.js'
 import { loadBattery } from '../data/index.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
+import ChapterGoals from '../components/ChapterGoals.vue'
+import VideoSlot from '../components/VideoSlot.vue'
 import DataBadge from '../components/DataBadge.vue'
 
 const route = ref('physics')

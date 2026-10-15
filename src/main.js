@@ -19,6 +19,7 @@ const AgingView = () => import('./views/AgingView.vue')
 const DataLabView = () => import('./views/DataLabView.vue')
 const PredictionView = () => import('./views/PredictionView.vue')
 const EndingView = () => import('./views/EndingView.vue')
+const LearningView = () => import('./views/LearningView.vue')
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -30,6 +31,7 @@ const router = createRouter({
     { path: '/datalab', name: 'datalab', component: DataLabView, meta: { title: '真实数据实验室', chapter: 5 } },
     { path: '/prediction', name: 'prediction', component: PredictionView, meta: { title: '预测方法实验室', chapter: 6 } },
     { path: '/ending', name: 'ending', component: EndingView, meta: { title: '预测任务', chapter: 7 } },
+    { path: '/learn', name: 'learn', component: LearningView, meta: { title: '学习地图与资料来源', chapter: 8 } },
     { path: '/:pathMatch(.*)*', redirect: '/' }
   ],
   scrollBehavior() { return { top: 0 } }

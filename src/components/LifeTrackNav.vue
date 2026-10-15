@@ -29,7 +29,7 @@
       <div class="nav-status">
         <span class="status-dot"></span>
         <span class="status-copy"><i>当前对象</i><b>{{ ch?.subject }}</b></span>
-        <span class="counter num">{{ current + 1 }}/07</span>
+        <span class="counter num">{{ current + 1 }}/{{ pad(chapters.length) }}</span>
       </div>
     </div>
 
@@ -91,7 +91,9 @@
       <div v-if="sheetOpen" class="chapter-sheet" @click.self="sheetOpen = false">
         <div class="cs-panel" role="dialog" aria-modal="true" aria-label="章节目录">
           <div class="cs-head">
-            <span><i>共 {{ chapters.length }} 章 · 快速浏览约 5 分钟</i><b>章节目录</b></span>
+            <!-- 总时长由各章的 duration（秒）实时求和，不写死数字 ——
+                 以后增删章节，这里会自动跟着变，不会再出现"各章之和与表头对不上"的老问题。 -->
+            <span><i>共 {{ chapters.length }} 章 · 快速浏览约 {{ totalMinutes }} 分钟</i><b>章节目录</b></span>
             <button type="button" class="cs-close" aria-label="关闭目录" @click="sheetOpen = false">
               <IconGlyph name="close" :size="18" />
             </button>
@@ -127,10 +129,12 @@ import { chapters } from '../stores/tour.js'
 import IconGlyph from './IconGlyph.vue'
 
 const route = useRoute()
-const shortNames = ['首页', '结构', '工作', '老化', '数据', '模型', '预测']
+const shortNames = ['首页', '结构', '工作', '老化', '数据', '模型', '预测', '学习']
 const current = computed(() => (route.meta.chapter ?? 1) - 1)
 const ch = computed(() => chapters[current.value])
 const progress = computed(() => (current.value / (chapters.length - 1)) * 100)
+// 目录面板表头的"约 N 分钟"：由各章 duration（秒）求和后四舍五入，避免写死数字后与列内条目矛盾。
+const totalMinutes = computed(() => Math.max(1, Math.round(chapters.reduce((sum, c) => sum + c.duration, 0) / 60)))
 const pad = (n) => String(n).padStart(2, '0')
 
 const prev = computed(() => chapters[current.value - 1] || null)

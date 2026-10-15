@@ -74,7 +74,7 @@ const conErr = []
   console.log('主包加载期 console.error =', conErr.length, conErr.slice(0, 3))
 
   console.log('\n=== 真实鼠标点击顶部导航 ===')
-  const pages = [['#/types', '02'], ['#/principle', '03'], ['#/aging', '04'], ['#/datalab', '05'], ['#/prediction', '06'], ['#/ending', '07'], ['#/', '01']]
+  const pages = [['#/types', '02'], ['#/principle', '03'], ['#/aging', '04'], ['#/datalab', '05'], ['#/prediction', '06'], ['#/ending', '07'], ['#/learn', '08'], ['#/', '01']]
   let bad = 0
   for (const [hash] of pages) {
     const pos = JSON.parse(await ev(`(function(){

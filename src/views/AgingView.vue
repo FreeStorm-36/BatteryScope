@@ -127,6 +127,10 @@
       <p class="chart-caliber">纵轴为归一化相对量（%），呈现趋势关系，非绝对测量值。</p>
     </div>
 
+    <VideoSlot id="ch04-sei" />
+    <VideoSlot id="ch04-plating" />
+    <ChapterGoals :chapter="4" />
+
     <ChapterFooter conclusion="电池不是在某一天突然坏掉，而是多种微小损伤在一次次循环中共同累积。" />
   </div>
 </template>
@@ -140,6 +144,8 @@ import { createCameraFly } from '../three/cameraFly.js'
 import { buildAnodeParticles } from '../three/batteryModel.js'
 import { mechanisms, AGING_MILESTONES, agingStateAt, PROGRESS_SPAN, cycleToProgress, progressToCycle } from '../data/index.js'
 import ChapterFooter from '../components/ChapterFooter.vue'
+import ChapterGoals from '../components/ChapterGoals.vue'
+import VideoSlot from '../components/VideoSlot.vue'
 import DataBadge from '../components/DataBadge.vue'
 import IconGlyph from '../components/IconGlyph.vue'
 

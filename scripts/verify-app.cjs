@@ -27,7 +27,10 @@ const PAGES = [
   { hash: '#/aging', label: '04 老化', need: ['.obs', '.three-box canvas', '.ctrl-tower', '.view-reset'] },
   { hash: '#/datalab', label: '05 数据', need: ['.datalab', 'canvas'] },
   { hash: '#/prediction', label: '06 模型', need: ['.quiz', '.route-tabs', 'canvas'] },
-  { hash: '#/ending', label: '07 预测', need: ['.task', '.step', '.run-btn'] }
+  { hash: '#/ending', label: '07 预测', need: ['.task', '.step', '.run-btn'] },
+  // 08 是 2026-10-15 新增的「学习地图与资料来源」章：
+  // 知识图谱 / 学习目标 / 自测 / 资料来源 / 可视化溯源 五个区块都要在。
+  { hash: '#/learn', label: '08 学习', need: ['.learning', '.kmap', '.goals', '.quizbox', '.dataset', '.prov'] }
 ]
 
 let child = null
@@ -160,6 +163,6 @@ const get = (url) => new Promise((res, rej) => {
     if (!clean) console.log('     ' + problems.join('\n     '))
   }
 
-  console.log(`\n${failed === 0 ? '✓ 7 页全部通过' : `✗ ${failed} 页存在问题`}`)
+  console.log(`\n${failed === 0 ? `✓ ${PAGES.length} 页全部通过` : `✗ ${failed} 页存在问题`}`)
   ws.close(); killTree(); process.exit(failed ? 1 : 0)
 })().catch((e) => { console.error('ERROR', e.message); killTree(); process.exit(1) })
