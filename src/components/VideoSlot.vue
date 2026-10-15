@@ -22,12 +22,16 @@
          绝不能让评审看到"待接入"这类字样。 -->
     <div v-else class="vs-placeholder">
       <span class="vp-badge">开发态占位 · 正式构建自动隐藏</span>
+      <!-- 优先级：必做 / 建议 / 可选。留空不渲染，不会有任何视觉空洞，
+           所以"时间紧就不做"是安全选项，不是欠账。 -->
+      <span class="vp-pri" :class="`is-${slot.priority}`">{{ priorityLabel[slot.priority] || '未分级' }}</span>
       <p class="vp-where"><i>配套</i>{{ slot.where }}</p>
       <p class="vp-style"><i>形式</i>{{ slot.style }}</p>
       <ul class="vp-needs">
         <li v-for="(m, i) in slot.mustCover" :key="i">{{ m }}</li>
       </ul>
       <p class="vp-avoid"><i>注意</i>{{ slot.avoid }}</p>
+      <p v-if="slot.note" class="vp-note"><i>取舍</i>{{ slot.note }}</p>
       <p class="vp-file"><i>放这里</i>public/media/{{ slot.file }}</p>
     </div>
 
@@ -39,7 +43,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { videoSlots, slotReady, showPlaceholder } from '../data/videos.js'
+import { videoSlots, slotReady, showPlaceholder, priorityLabel } from '../data/videos.js'
 import IconGlyph from './IconGlyph.vue'
 
 const props = defineProps({
@@ -79,6 +83,13 @@ const dev = computed(() => showPlaceholder())
     display: inline-block; margin-bottom: 10px; padding: 2px 9px; border-radius: 999px;
     background: rgba(245, 158, 11, 0.14); color: var(--amber); font-size: 10.5px; letter-spacing: 0.04em;
   }
+  .vp-pri {
+    display: inline-block; margin: 0 0 10px 8px; padding: 2px 10px; border-radius: 999px;
+    font-size: 10.5px; letter-spacing: 0.06em;
+    &.is-must { background: rgba(77, 168, 255, 0.16); color: var(--blue); }
+    &.is-nice { background: rgba(34, 211, 238, 0.13); color: var(--cyan); }
+    &.is-optional { background: rgba(148, 163, 184, 0.13); color: var(--text-3); }
+  }
   p { font-size: 12.5px; color: var(--text-2); line-height: 1.7; margin-top: 5px;
     i { display: inline-block; min-width: 34px; margin-right: 8px; font-style: normal; color: var(--blue); font-size: 11.5px; }
   }
@@ -87,6 +98,8 @@ const dev = computed(() => showPlaceholder())
     li { font-size: 12.5px; color: var(--text-2); line-height: 1.8; }
   }
   .vp-avoid i { color: var(--amber); }
+  /* 取舍说明：这条为什么建议做 / 为什么可以不做 */
+  .vp-note i { color: var(--cyan); }
   .vp-file { font-family: var(--mono); font-size: 11.5px; }
 }
 
