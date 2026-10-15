@@ -3,7 +3,7 @@
     <header class="head">
       <p class="chapter-eyebrow">Chapter 04 · 老化观测舱</p>
       <h2 class="chapter-title">电池并不是在某一天突然坏掉的</h2>
-      <p class="chapter-sub">多种微小损伤，在一次次循环中共同累积。选择尺度与机制，拖动概念进程，看见损伤出现和长大。</p>
+      <p class="chapter-sub">选择尺度与机制，拖动概念进程，看见损伤出现和长大。点选单一机制时，镜头会带到最能看清它的位置，其余机制自动淡出。</p>
       <span class="corner badge-line"><DataBadge type="concept" />机制演化示意 · 概念状态，非真实电化学求解</span>
     </header>
 
@@ -18,13 +18,23 @@
           </button>
         </div>
 
-        <!-- 机制筛选 -->
+        <!-- 机制筛选：再点一次已选中的机制 = 回到六机制同台 -->
         <div class="mech-row">
           <button class="btn-ghost" :class="{ active: filter === 'all' }" @click="filter = 'all'">损伤指纹</button>
-          <button v-for="m in mechanisms" :key="m.key" class="btn-ghost mech-btn" :class="{ active: filter === m.key }" @click="filter = m.key">
+          <button
+            v-for="m in mechanisms"
+            :key="m.key"
+            class="btn-ghost mech-btn"
+            :class="{ active: filter === m.key }"
+            :aria-pressed="filter === m.key"
+            @click="filter = (filter === m.key ? 'all' : m.key)"
+          >
             <span class="m-dot" :style="{ background: m.color }"></span>{{ m.short }}
           </button>
         </div>
+
+        <!-- 聚焦提示：告诉观众"现在为什么只剩一种现象" -->
+        <p v-if="filter !== 'all'" class="focus-note">正在单独演示「{{ curMech.short }}」，其余机制已淡出；再次点击该机制或点"损伤指纹"可恢复同台对比。</p>
 
         <!-- 右上：读数 + 视角工具（纵向排，避开左上尺度切换与底部机制筛选） -->
         <div class="stage-right">
@@ -57,7 +67,7 @@
             <button v-for="m in AGING_MILESTONES" :key="m.cycle" class="btn-ghost num sm" :class="{ active: Math.abs(cycle - m.cycle) < 8 }" @click="jump(m.cycle)">{{ m.label }}</button>
           </div>
           <div class="play-row">
-            <button class="btn-primary play-main" :aria-label="playing ? '暂停' : '播放'" @click="playing = !playing"><IconGlyph :name="playing ? 'pause' : 'play'" size="18" /><span>{{ playing ? '暂停' : '播放' }}</span></button>
+            <button class="btn-primary play-main" :aria-label="playing ? '暂停' : '播放'" @click="playing = !playing"><IconGlyph :name="playing ? 'pause' : 'play'" :size="18" /><span>{{ playing ? '暂停' : '播放' }}</span></button>
             <div class="step-group">
               <button class="btn-ghost icon" @click="nudge(-30)" aria-label="后退 5%">−5%</button>
               <button class="btn-ghost icon" @click="nudge(30)" aria-label="前进 5%">+5%</button>
@@ -102,18 +112,24 @@
       </aside>
     </div>
 
-    <!-- 动画下方：损伤指纹 + 锂库存并排 -->
-    <div class="info-row">
+    <!-- 动画下方：全机制同台时看损伤指纹，单机制聚焦时看该机制专属读数 -->
+    <div class="info-row" :class="{ solo: filter !== 'all' }">
       <div class="finger panel" v-show="filter === 'all'">
         <h5>损伤指纹 <i>六种机制的相对严重度</i></h5>
-        <div ref="fingerBox" class="finger-chart"></div>
-        <p class="finger-hint">点击任意一瓣，进入该机制专属视图。</p>
+        <FingerprintChart :items="mechanisms" :values="fpValues" @select="filter = $event" />
+        <p class="finger-hint">{{ fpHint }}</p>
       </div>
 
-      <div class="inv panel" v-if="filter === 'sei' || filter === 'all'">
+      <div class="inv panel" v-if="filter === 'all'">
         <div class="inv-head"><span>可循环锂库存</span><b class="num">{{ ((1 - st.seiSeverity * 0.22) * 100).toFixed(1) }}%</b></div>
         <div class="inv-track"><div class="inv-fill" :style="{ width: (1 - st.seiSeverity * 0.22) * 100 + '%' }"></div></div>
         <p class="inv-note">SEI 每长厚一点，就永久"锁住"一点锂 —— 库存不可逆下降。</p>
+      </div>
+
+      <div class="inv panel" v-else-if="readout">
+        <div class="inv-head"><span>{{ readout.title }}</span><b class="num" :style="{ color: curMech.color }">{{ readout.value.toFixed(0) }}%</b></div>
+        <div class="inv-track"><div class="inv-fill" :style="{ width: Math.max(2, readout.value) + '%', background: curMech.color }"></div></div>
+        <p class="inv-note">{{ readout.note }}</p>
       </div>
     </div>
 
@@ -137,6 +153,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import * as THREE from 'three'
 import { initChart } from '../services/charts.js'
 import { createLabScene, PALETTE } from '../three/labScene.js'
@@ -148,6 +165,7 @@ import ChapterGoals from '../components/ChapterGoals.vue'
 import VideoSlot from '../components/VideoSlot.vue'
 import DataBadge from '../components/DataBadge.vue'
 import IconGlyph from '../components/IconGlyph.vue'
+import FingerprintChart from '../components/FingerprintChart.vue'
 
 const scales = [
   { key: 'outside', label: '外观诊断', hint: '整芯 · 温度与形变' },
@@ -174,10 +192,28 @@ const showSummary = ref(false)
 const view = ref('health')
 const threeBox = ref(null)
 const chartBox = ref(null)
-const fingerBox = ref(null)
+const route = useRoute()
 
 const st = reactive(agingStateAt(0))
 const curMech = computed(() => (filter.value === 'all' ? mechanisms[0] : mechanisms.find((m) => m.key === filter.value)))
+
+// 损伤指纹（SVG 自绘）：10 fps 节流更新即可，60 fps 重绘纯属浪费
+const fpValues = ref([])
+const fpHint = ref('点击任意一瓣，进入该机制专属视图。')
+
+// 单机制聚焦时的专属读数（概念进程对应的相对量，非测量值）
+const readout = computed(() => {
+  const s = st
+  const map = {
+    sei: { title: '可循环锂库存', value: (1 - s.seiSeverity * 0.22) * 100, note: 'SEI 每长厚一点，就永久"锁住"一点锂 —— 库存不可逆下降。' },
+    plating: { title: '内短路隐患指数', value: s.platingSeverity * 100, note: '枝晶刺穿隔膜即构成内短路；析出的锂失去活性，容量直接损失。' },
+    crack: { title: '裂纹扩展程度', value: s.crackSeverity * 100, note: '裂纹暴露新表面、生成更多 SEI，严重时颗粒碎裂并失去电接触。' },
+    lam: { title: '失活颗粒比例', value: s.lamSeverity * 100, note: '掉队的颗粒不再参与充放电，容量台阶式下降且不可逆。' },
+    electrolyte: { title: '离子传输阻力（相对）', value: Math.min(100, (s.resistance - 1) / 1.4 * 100), note: '电解液被副反应持续消耗，锂离子的"水路"变窄，内阻上升、倍率性能下降。' },
+    gas: { title: '鼓胀程度（相对）', value: s.gasSeverity * 100, note: '气体在电芯内积聚，外壳鼓起、界面接触变差，是热失控的前兆信号之一。' }
+  }
+  return filter.value === 'all' ? null : map[filter.value]
+})
 
 watch(progressInput, (p) => { cycle.value = progressToCycle(p) })
 watch(cycle, (c) => { progressInput.value = cycleToProgress(c) })
@@ -185,11 +221,19 @@ function jump(c) { cycle.value = c; playing.value = false; nodeFlash.value = '';
 function nudge(d) { cycle.value = Math.min(PROGRESS_SPAN, Math.max(0, cycle.value + d)) }
 function pausePlay() { playing.value = false; nodeFlash.value = ''; showSummary.value = false }
 
+/* 损伤指纹悬停/聚焦：读出该机制当前严重度（与 3D 同一状态源，数字不会对不上） */
+function onFpHover(i) {
+  fpHint.value = i == null
+    ? '点击任意一瓣，进入该机制专属视图。'
+    : `${mechanisms[i].short}：当前相对严重度 ${(fpValues.value[i] * 100).toFixed(0)}% · 点击进入专属视图`
+}
+
 /* ══ 3D：三个独立尺度场景（状态同步） ══ */
-let scene = null, raf = 0, chart = null, fingerChart = null
+let scene = null, raf = 0, chart = null
+let dendMat = null, heroDendMat = null
 const fly = createCameraFly(() => scene)
 let outsideGroup, sectionGroup, microGroup
-let seiMesh, dendriteGroup, crackLines, particles, electrolyteMesh, bubbles, heatLight, hotZone
+let seiMesh, dendriteGroup, crackLines, particles, electrolyteMesh, elecGhost, bubbles, heatLight, hotZone
 let heroP, heroSei, heroDendrites, heroCracks, heroNeighbors, heroStress
 const clock = new THREE.Clock()
 let summaryTimer = null
@@ -228,6 +272,8 @@ function buildOutside() {
     const b = new THREE.Mesh(new THREE.SphereGeometry(0.05 + Math.random() * 0.06, 8, 8), bubbleMat.clone())
     b.position.set((Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 2.4, (Math.random() - 0.5) * 1.0)
     b.userData.thresh = i / 12
+    b.userData.base = b.position.clone()
+    b.userData.phase = i * 0.7
     bubbles.push(b)
     g.add(b)
   }
@@ -256,6 +302,14 @@ function buildSection() {
   )
   g.add(electrolyteMesh)
 
+  // 电解液"初始体积"参考框：聚焦「电解液减少」时常驻显示，
+  // 液体收缩时有个对照，才知道少掉的是哪一块
+  elecGhost = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(R * 1.72, H * 0.88, D * 0.95)),
+    new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0 })
+  )
+  g.add(elecGhost)
+
   const slab = (w, color, x) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, H * 0.84, D * 0.82), new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.2 }))
     m.position.x = x
@@ -278,7 +332,7 @@ function buildSection() {
   g.add(seiMesh)
 
   dendriteGroup = new THREE.Group()
-  const dendMat = new THREE.MeshStandardMaterial({ color: PALETTE.dendrite, roughness: 0.5, metalness: 0.35 })
+  dendMat = new THREE.MeshStandardMaterial({ color: PALETTE.dendrite, roughness: 0.5, metalness: 0.35, emissive: 0x000000, emissiveIntensity: 0 })
   for (let i = 0; i < 22; i++) {
     const cone = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.16 + Math.random() * 0.3, 5), dendMat)
     cone.position.set(R - 0.5 + Math.random() * 0.1, (Math.random() - 0.5) * H * 0.7, -0.1 + (Math.random() - 0.5) * 0.7)
@@ -331,9 +385,9 @@ function buildMicro() {
   )
   g.add(heroStress)
   heroDendrites = new THREE.Group()
-  const dendMat = new THREE.MeshStandardMaterial({ color: 0xdde6f2, roughness: 0.5, metalness: 0.35 })
+  heroDendMat = new THREE.MeshStandardMaterial({ color: 0xdde6f2, roughness: 0.5, metalness: 0.35, emissive: 0x000000, emissiveIntensity: 0 })
   for (let i = 0; i < 14; i++) {
-    const needle = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.3 + Math.random() * 0.35, 6), dendMat)
+    const needle = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.3 + Math.random() * 0.35, 6), heroDendMat)
     const a = Math.random() * Math.PI * 2
     const b = Math.PI / 2 + (Math.random() - 0.5) * 0.7
     needle.position.set(Math.cos(a) * Math.sin(b) * 0.95, Math.cos(b) * 0.95 * 0.6, Math.sin(a) * Math.sin(b) * 0.95)
@@ -345,19 +399,23 @@ function buildMicro() {
   }
   g.add(heroDendrites)
   heroCracks = []
-  const crackMat = new THREE.LineBasicMaterial({ color: 0x120a02, transparent: true, opacity: 0 })
+  // 裂纹用细管而不是 Line：WebGL 的 linewidth 恒为 1px，在颗粒表面细得看不见；
+  // 管子有真实粗细、能吃光照，深色裂口才读得出来。半径取 0.02 骑在颗粒表面（半径 0.9）上，
+  // 一半陷进颗粒、一半露在外面，看起来就是"长在颗粒上的裂纹"。
+  const crackMat = new THREE.MeshStandardMaterial({ color: 0x140b03, roughness: 0.85, metalness: 0.05, transparent: true, opacity: 0 })
   for (let i = 0; i < 6; i++) {
     const pts = []
-    let a = Math.random() * Math.PI * 2
+    // 起点偏向 +z 半球：微观尺度默认机位在 +x +z 一侧，裂纹长在正面才看得见
+    let a = 0.25 + Math.random() * 0.85
     for (let s = 0; s < 5; s++) {
-      const rr = 0.92 + Math.sin(s) * 0.01
+      const rr = 0.93 + Math.sin(s) * 0.01
       a += 0.3 + Math.random() * 0.2
       pts.push(new THREE.Vector3(Math.cos(a) * rr, Math.sin(a * 1.3) * rr * 0.7, Math.sin(a) * rr * 0.8))
     }
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), crackMat.clone())
-    line.userData.thresh = (i + 1) / 6
-    heroCracks.push(line)
-    g.add(line)
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 32, 0.02, 6, false), crackMat.clone())
+    tube.userData.thresh = (i + 1) / 6
+    heroCracks.push(tube)
+    g.add(tube)
   }
   heroNeighbors = []
   const nGeo = new THREE.IcosahedronGeometry(0.22, 1)
@@ -375,42 +433,112 @@ function buildMicro() {
   return g
 }
 
-/* 唯一状态源 st → 三个尺度 */
+/* 机制聚焦取景：每种机制的"事发地"不同，镜头必须跟着换 ——
+   SEI / 析锂长在负极表面（剖面尺度贴近阳极），开裂 / 失活发生在颗粒上（微观尺度），
+   电解液减少看整个剖面，产气鼓胀只能在外观尺度看到。
+   不换机位的话，六种机制挤在同一取景里，观感上就只剩"都多了一层橙色"。 */
+const MECH_FOCUS = {
+  sei:         { scale: 'section', pos: [3.8, 1.15, 3.5], tgt: [1.25, 0, 0.1] },
+  plating:     { scale: 'section', pos: [4.3, -0.5, 2.3], tgt: [1.3, -0.1, 0.0] },
+  crack:       { scale: 'micro',   pos: [2.1, 0.7, 4.4], tgt: [0, -0.1, 0] },
+  lam:         { scale: 'micro',   pos: [2.1, 0.7, 4.4], tgt: [0, -0.1, 0] },
+  electrolyte: { scale: 'section', pos: [0.3, 1.5, 8.6], tgt: [0, -0.3, 0] },
+  gas:         { scale: 'outside', pos: [0, 1.0, 8.4], tgt: [0, -0.1, 0] }
+}
+
+/* 选中单一机制 → 切到它的主场尺度并飞行；回到"损伤指纹" → 飞回当前尺度常规机位 */
+watch(filter, (f) => {
+  if (!scene) return
+  const p = f === 'all' ? SCALE_PRESETS[scale.value] : MECH_FOCUS[f]
+  if (!p) return
+  if (f !== 'all') scale.value = p.scale
+  fly.flyTo(p.pos, p.tgt, 1.0)
+  const mid = setTimeout(() => {
+    outsideGroup.visible = p.scale === 'outside'
+    sectionGroup.visible = p.scale === 'section'
+    microGroup.visible = p.scale === 'micro'
+  }, 450)
+  scaleTimers.push(mid)
+})
+
+/* 唯一状态源 st → 三个尺度。
+   聚焦规则：f = 'all' 时六机制同台；f = 某机制时，只有该机制保持全强度，
+   其余淡出到 10%（不是完全隐藏——留一点痕迹才能表达"它们也在，只是不是主角"）。 */
+const FOCUS_DIM = 0.1
 function applyAging(s) {
   if (!scene) return
+  const f = filter.value
+  const on = (k) => f === 'all' || f === k
+  const dim = (k) => (on(k) ? 1 : FOCUS_DIM)
   const breathe = 1 + 0.015 * Math.sin(clock.elapsedTime * 1.4)
 
+  // ── 剖面尺度：SEI 膜（黄褐薄膜）/ 析锂（银白枝晶）/ 开裂（深色裂纹）/ 电解液（蓝色液体） ──
   seiMesh.scale.x = (0.07 + s.seiSeverity * 0.5) / 0.07
-  seiMesh.material.opacity = 0.2 + s.seiSeverity * 0.42
-  dendriteGroup.visible = s.platingSeverity > 0.06
+  seiMesh.material.opacity = (0.2 + s.seiSeverity * 0.42) * dim('sei')
+  seiMesh.material.emissiveIntensity = on('sei') ? 0.5 : 0.1
+  // 析锂聚焦时枝晶放大并微微辉光：针状形貌要能被一眼看见，而不是躲在电极旁边
+  dendriteGroup.visible = on('plating') && s.platingSeverity > 0.06
+  dendriteGroup.scale.setScalar(on('plating') ? 1.9 : 1)
+  dendMat.emissive.setHex(on('plating') ? 0x1e293b : 0x000000)
+  dendMat.emissiveIntensity = on('plating') ? 0.85 : 0
   dendriteGroup.children.forEach((c, i) => { c.visible = i / 22 < s.platingSeverity * 1.5 })
-  crackLines.forEach((l) => { l.material.opacity = s.crackSeverity > l.userData.thresh ? 0.62 : 0 })
-  electrolyteMesh.material.opacity = Math.max(0.05, 0.18 - s.electrolyteSeverity * 0.13)
+  crackLines.forEach((l) => { l.material.opacity = (s.crackSeverity > l.userData.thresh ? 0.62 : 0) * dim('crack') })
+  // 聚焦电解液减少时：液体本身提亮一档，并显示初始体积参考框，"变小"才读得出来
+  const elecBase = f === 'electrolyte' ? 0.3 : 0.18
+  electrolyteMesh.material.opacity = Math.max(0.05, elecBase - s.electrolyteSeverity * 0.13) * dim('electrolyte')
   electrolyteMesh.scale.x = 1 - s.electrolyteSeverity * 0.25
-  bubbles.forEach((b) => { b.visible = s.gasSeverity > b.userData.thresh * 0.7 })
-  hotZone.material.opacity = filter.value === 'section' ? 0.08 + Math.max(s.seiSeverity, s.crackSeverity, s.platingSeverity) * 0.18 : 0
-  particles.update(clock.elapsedTime, { lamSeverity: s.lamSeverity, crackSeverity: s.crackSeverity })
+  elecGhost.material.opacity = f === 'electrolyte' ? 0.22 : 0
+  // 损伤热区：只在聚焦界面类机制（SEI / 析锂）时亮起，标出"反应发生在哪"
+  hotZone.material.opacity = f === 'sei' || f === 'plating'
+    ? 0.08 + Math.max(s.seiSeverity, s.crackSeverity, s.platingSeverity) * 0.18
+    : 0
+  // 颗粒床：失活（变灰）只在材料失活聚焦时发生，应力偏色（开裂前兆）只在开裂聚焦时发生；
+  // 聚焦界面类机制（SEI / 析锂）时颗粒床淡出，让膜与枝晶成为画面主角
+  particles.mesh.material.transparent = true
+  particles.mesh.material.opacity = f === 'sei' || f === 'plating' || f === 'electrolyte' || f === 'gas' ? 0.28 : 1
+  particles.update(clock.elapsedTime, {
+    lamSeverity: on('lam') ? s.lamSeverity : 0,
+    crackSeverity: on('crack') ? s.crackSeverity : 0
+  })
 
+  // ── 外观尺度：产气鼓胀（外壳变胖 + 气泡）与温升热线 ──
   const body = outsideGroup.getObjectByName('outsideBody')
   const heatRing = outsideGroup.getObjectByName('heatRing')
-  const swell = 1 + s.gasSeverity * 0.04
+  // 产气聚焦：钢壳半透明化，内部气泡才看得见；鼓胀幅度同时放大三倍
+  const gasFocus = f === 'gas'
+  body.material.transparent = gasFocus
+  body.material.opacity = gasFocus ? 0.26 : 1
+  body.material.depthWrite = !gasFocus
+  const swell = 1 + s.gasSeverity * (gasFocus ? 0.12 : 0.04) * (on('gas') ? 1 : FOCUS_DIM)
   body.scale.set(swell, 1, swell)
-  heatRing.material.opacity = Math.min(0.45, (s.temperatureRise - 1) * 0.32)
-  heatLight.intensity = (s.temperatureRise - 1) * 5
+  heatRing.material.opacity = Math.min(0.45, (s.temperatureRise - 1) * 0.32) * dim('gas')
+  heatLight.intensity = (s.temperatureRise - 1) * 5 * dim('gas')
+  bubbles.forEach((b) => {
+    b.visible = on('gas') && s.gasSeverity > b.userData.thresh * 0.7
+    if (b.visible) b.position.y = b.userData.base.y + Math.sin(clock.elapsedTime * 0.8 + b.userData.phase) * 0.14
+  })
 
-  const pulse = 1 + s.crackSeverity * 0.045 * (0.5 + 0.5 * Math.sin(clock.elapsedTime * 2.2))
-  heroP.scale.setScalar(breathe * pulse)
+  // ── 微观尺度：英雄颗粒的 SEI 壳 / 枝晶 / 裂纹 / 邻居失活 ──
+  // 开裂聚焦时颗粒"呼吸"幅度加大：应力累积导致的体积变化被夸张，才看得出它在受罪
+  const crackPulse = on('crack') ? 1 + s.crackSeverity * 0.09 * (0.5 + 0.5 * Math.sin(clock.elapsedTime * 2.2)) : 1
+  heroP.scale.setScalar(breathe * crackPulse)
   heroSei.scale.setScalar(1 + s.seiSeverity * 0.28)
-  heroSei.material.opacity = 0.1 + s.seiSeverity * 0.34
-  heroStress.material.opacity = s.crackSeverity > 0.05 && s.crackSeverity < 0.85 ? Math.max(0, (0.5 - Math.abs(s.crackSeverity - 0.45)) * 0.9) : 0
-  heroDendrites.children.forEach((d) => { d.visible = s.platingSeverity > d.userData.thresh * 0.8 })
-  heroCracks.forEach((l) => { l.material.opacity = s.crackSeverity > l.userData.thresh ? 0.65 : 0 })
+  heroSei.material.opacity = (0.1 + s.seiSeverity * 0.34) * dim('sei')
+  heroSei.material.emissiveIntensity = on('sei') ? 0.45 : 0.1
+  heroStress.material.opacity = on('crack') && s.crackSeverity > 0.04 && s.crackSeverity < 0.95 ? Math.max(0, (0.62 - Math.abs(s.crackSeverity - 0.42)) * 1.05) : 0
+  heroDendrites.children.forEach((d) => { d.visible = on('plating') && s.platingSeverity > d.userData.thresh * 0.8 })
+  heroDendrites.scale.setScalar(on('plating') ? 1.35 : 1)
+  heroDendMat.emissive.setHex(on('plating') ? 0x1e293b : 0x000000)
+  heroDendMat.emissiveIntensity = on('plating') ? 0.7 : 0
+  heroCracks.forEach((l) => { l.material.opacity = (s.crackSeverity > l.userData.thresh ? 0.92 : 0) * dim('crack') })
   heroNeighbors.forEach((n) => {
-    const dead = n.userData.idx / 7 < s.lamSeverity
+    const dead = n.userData.idx / 7 < (on('lam') ? s.lamSeverity : 0)
     n.material.color.set(dead ? PALETTE.dead : PALETTE.anode)
+    // 失活颗粒同时"褪色 + 缩小 + 脱连接"，三个信号叠起来才看得出"掉队"
+    n.scale.setScalar(dead ? 0.8 : 1)
     const detach = dead ? 0.5 + (n.userData.idx % 3) * 0.15 : 0
-    n.position.copy(n.userData.base).multiplyScalar(1 + detach * 0.25)
-    n.position.y += detach * 0.4
+    n.position.copy(n.userData.base).multiplyScalar(1 + detach * 0.42)
+    n.position.y += detach * 0.5
     n.userData.link.material.opacity = dead ? 0.05 : 0.35
     n.userData.link.geometry.setFromPoints([n.position.clone(), new THREE.Vector3(0, 0, 0)])
   })
@@ -497,25 +625,6 @@ function chartOption(v, s) {
 function fingerValue(s) {
   return mechanisms.map((m) => +({ sei: s.seiSeverity, plating: s.platingSeverity, crack: s.crackSeverity, lam: s.lamSeverity, electrolyte: s.electrolyteSeverity, gas: s.gasSeverity }[m.key]).toFixed(2))
 }
-function fingerOption(s) {
-  return {
-    backgroundColor: 'transparent',
-    tooltip: { backgroundColor: 'rgba(13,18,32,0.95)', borderColor: 'rgba(77,168,255,0.3)', textStyle: { color: '#e6edf7', fontSize: 12 } },
-    radar: {
-      indicator: mechanisms.map((m) => ({ name: m.short.replace(' 增厚', '').replace(' 减少', '').replace('鼓胀', '').replace('颗粒', ''), max: 1 })),
-      radius: '68%', center: ['50%', '52%'],
-      axisName: { color: '#8b98b0', fontSize: 10.5 },
-      splitArea: { areaStyle: { color: ['rgba(77,168,255,0.03)', 'rgba(77,168,255,0.06)'] } },
-      splitLine: { lineStyle: { color: 'rgba(77,168,255,0.15)' } },
-      axisLine: { lineStyle: { color: 'rgba(77,168,255,0.2)' } }
-    },
-    series: [{
-      type: 'radar', symbolSize: 4,
-      data: [{ value: fingerValue(s), name: '严重度', areaStyle: { color: 'rgba(245,158,11,0.25)' }, lineStyle: { color: '#f59e0b', width: 2 }, itemStyle: { color: '#f59e0b' } }],
-      animationDuration: 300
-    }]
-  }
-}
 
 onMounted(async () => {
   await nextTick()
@@ -554,23 +663,24 @@ onMounted(async () => {
   outsideGroup.visible = false
   microGroup.visible = false
 
+  // 链接直达某一机制的专属视图（演示与自查都能用）：
+  // #/aging?mech=plating&cycle=320 —— mech 取机制 key，cycle 取概念进程 0—100
+  const q = route.query
+  if (q.scale && SCALE_PRESETS[q.scale]) scale.value = q.scale
+  if (q.mech && mechanisms.some((m) => m.key === q.mech)) filter.value = q.mech
+  if (q.cycle != null && !Number.isNaN(+q.cycle)) cycle.value = progressToCycle(+q.cycle)
+
   chart = initChart(chartBox.value)
   chart.setOption(chartOption(view.value, st))
   chart.on('click', (p) => { if (p.name != null) jump(progressToCycle(+p.name)) })
 
-  fingerChart = initChart(fingerBox.value)
-  fingerChart.setOption(fingerOption(st))
-  fingerChart.on('click', (p) => {
-    if (p.name) {
-      const m = mechanisms.find((x) => x.short.includes(p.name))
-      if (m) filter.value = m.key
-    }
-  })
+  fpValues.value = fingerValue(st)
 
   window.addEventListener('resize', onChartResize)
 
   let nodeHold = 0
   let lastNodeIdx = -1
+  let lastFpAt = 0
   const loop = () => {
     raf = requestAnimationFrame(loop)
     const dt = Math.min(clock.getDelta(), 0.05)
@@ -603,8 +713,10 @@ onMounted(async () => {
     applyAging(st)
     updatePlayhead()
     fly.step(dt)
-    if (filter.value === 'all' && fingerChart) {
-      fingerChart.setOption({ series: [{ data: [{ value: fingerValue(st), name: '严重度', areaStyle: { color: 'rgba(245,158,11,0.25)' }, lineStyle: { color: '#f59e0b', width: 2 }, itemStyle: { color: '#f59e0b' } }] }] })
+    // 损伤指纹按 10 fps 节流刷新（数值来自同一状态源，不会与动画脱节）
+    if (filter.value === 'all' && clock.elapsedTime - lastFpAt > 0.1) {
+      lastFpAt = clock.elapsedTime
+      fpValues.value = fingerValue(st)
     }
     scene.render()
   }
@@ -642,7 +754,6 @@ onBeforeUnmount(() => {
   scaleTimers.forEach(clearTimeout)
   window.removeEventListener('resize', onChartResize)
   chart?.dispose()
-  fingerChart?.dispose()
   if (scene) scene.dispose()
 })
 </script>
@@ -669,6 +780,11 @@ onBeforeUnmount(() => {
   &.big { width: 12px; height: 12px; margin-right: 9px; box-shadow: 0 0 5px currentColor; } }
 .geom-note { position: absolute; right: 14px; bottom: 12px; z-index: 4; max-width: 46%;
   font-size: 10.5px; line-height: 1.55; text-align: right; color: var(--text-3); opacity: 0.86; pointer-events: none; }
+/* 聚焦提示：桌面浮在舞台顶部中央（左右两侧分别是尺度切换与读数，不冲突） */
+.focus-note { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 4; max-width: 52%;
+  padding: 6px 14px; border: 1px solid var(--hairline); border-radius: 999px;
+  background: rgba(13, 18, 32, 0.78); backdrop-filter: blur(6px);
+  font-size: 11.5px; line-height: 1.5; text-align: center; color: var(--text-2); pointer-events: none; }
 .stage-right { position: absolute; right: 14px; top: 14px; z-index: 4;
   display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .cycle-read { padding: 9px 16px; display: flex; gap: 10px; align-items: center;
@@ -696,11 +812,12 @@ onBeforeUnmount(() => {
     p { font-size: 12.5px; color: var(--text-2); line-height: 1.8; margin-bottom: 6px; b { color: var(--text-1); } }
     .disclaim { font-size: 11px; color: var(--text-3); } } }
 
-.info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  /* 单机制聚焦：读数面板独占一行，不留半幅空白 */
+  &.solo { grid-template-columns: minmax(0, 1fr); } }
 
 .finger { padding: 14px 16px;
   h5 { font-size: 13px; color: var(--text-1); i { font-style: normal; font-size: 11px; color: var(--text-3); margin-left: 8px; } }
-  .finger-chart { height: 190px; }
   .finger-hint { font-size: 11px; color: var(--text-3); text-align: center; } }
 .inv { padding: 14px 16px;
   .inv-head { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-2); b { color: var(--cyan); } }
@@ -781,8 +898,12 @@ onBeforeUnmount(() => {
     position: static; order: 4; width: 100%; max-width: none;
     .btn-ghost { min-height: 44px; padding: 8px 13px; font-size: 12.5px; } }
   .geom-note {
-    position: static; order: 5; max-width: none;
+    position: static; order: 6; max-width: none;
     font-size: 12px; text-align: left;
+  }
+  .focus-note {
+    position: static; order: 5; max-width: none; transform: none;
+    font-size: 12px; text-align: left; border-radius: var(--radius-sm);
   }
 
   /* 控制塔里的触摸目标统一撑到 44px —— 手机上按钮偏小极易点错 */

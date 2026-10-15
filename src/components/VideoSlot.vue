@@ -1,5 +1,8 @@
 <template>
-  <section v-if="ready || dev" class="video-slot panel">
+  <!-- 优先序：真实视频 > 本站自制微动画 > 开发态占位（正式构建不渲染） -->
+  <SceneLoader v-if="animLoader && !ready" :loader="animLoader" />
+
+  <section v-else-if="ready || dev" class="video-slot panel">
     <div class="vs-head">
       <span class="vs-tag"><IconGlyph name="play" :size="12" />科普视频</span>
       <b>{{ slot.title }}</b>
@@ -58,7 +61,9 @@
 <script setup>
 import { computed } from 'vue'
 import { videoSlots, slotReady, showPlaceholder, priorityLabel } from '../data/videos.js'
+import { animOf } from '../data/animations.js'
 import IconGlyph from './IconGlyph.vue'
+import SceneLoader from './anim/SceneLoader.vue'
 
 const props = defineProps({
   // 视频位 id，对应 src/data/videos.js 中 videoSlots[].id
@@ -67,6 +72,7 @@ const props = defineProps({
 
 const slot = computed(() => videoSlots.find((s) => s.id === props.id) || {})
 const ready = computed(() => slotReady(slot.value))
+const animLoader = computed(() => animOf(props.id))
 const dev = computed(() => showPlaceholder())
 </script>
 

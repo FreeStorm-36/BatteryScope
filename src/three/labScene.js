@@ -28,7 +28,7 @@ export const PALETTE = {
   copper: 0xd97757,      // 负极集流体（铜）
   aluminium: 0xbfc9d9,   // 正极集流体（铝）
   sei: 0xb45309,         // SEI 黄褐
-  dead: 0x64748b,        // 失活颗粒（灰）
+  dead: 0x93a1b5,        // 失活颗粒（灰，与活性灰蓝拉开差距，否则"掉队"看不出来）
   dendrite: 0xe2e8f0     // 析锂银白
 }
 

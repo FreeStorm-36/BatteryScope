@@ -29,9 +29,10 @@ const PAGES = [
   { hash: '#/datalab', label: '05 数据', need: ['.datalab', 'canvas'] },
   { hash: '#/prediction', label: '06 模型', need: ['.quiz', '.route-tabs', 'canvas'] },
   { hash: '#/ending', label: '07 预测', need: ['.task', '.step', '.run-btn'] },
-  // 08 是 2026-10-15 新增的「学习地图与资料来源」章：
-  // 知识图谱 / 学习目标 / 自测 / 资料来源 / 可视化溯源 五个区块都要在。
-  { hash: '#/learn', label: '08 学习', need: ['.learning', '.kmap', '.goals', '.quizbox', '.dataset', '.prov'] }
+  // 08 是 2026-10-15 新增的「学习地图与资料来源」章：知识图谱 / 学习目标 / 趣味互动 /
+  // 自测 / 资料来源 五个区块都要在（可视化溯源与方法许可 2026-10-15 晚撤下页面，
+  // 改为只进参赛介绍文档，见 docs/参赛介绍-技术路径与素材台账.md）。
+  { hash: '#/learn', label: '08 学习', need: ['.learning', '.kmap', '.goals', '.games', '.quizbox', '.dataset'] }
 ]
 
 let child = null
