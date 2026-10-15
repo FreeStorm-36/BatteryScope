@@ -12,6 +12,7 @@
 const { spawn, spawnSync } = require('child_process')
 const fs = require('fs')
 const http = require('http')
+const { dropProfileSync } = require('./_profile.cjs')
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
 const PORT = Number(process.env.CDP_PORT || 9338)
@@ -45,6 +46,9 @@ const get = (url) => new Promise((res, rej) => {
 })
 
 ;(async () => {
+  // profile 用的是固定名（能够复用），所以启动前先删掉上一轮留下的那份；
+  // 不清理的话 %TEMP% 会被这种 80—100 MB 的目录逐步吃掉（详见 scripts/_profile.cjs）。
+  dropProfileSync(process.env.TEMP + '/edge-verify-app')
   child = spawn(EDGE, [
     '--headless=new', '--disable-gpu', '--enable-unsafe-swiftshader', '--no-first-run',
     '--remote-debugging-port=' + PORT, '--user-data-dir=' + process.env.TEMP + '/edge-verify-app',

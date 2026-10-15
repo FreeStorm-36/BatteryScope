@@ -1,6 +1,7 @@
 /* 导航诊断：真实鼠标点击顶部导航，同时监控 network 失败 / HTTP>=400 / console 异常 */
 const { spawn } = require('child_process')
 const http = require('http')
+const { dropProfileSync } = require('./_profile.cjs')
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
 const PORT = 9340
@@ -11,6 +12,8 @@ const get = (url) => new Promise((res, rej) => {
   http.get(url, (r) => { let d = ''; r.on('data', (c) => (d += c)); r.on('end', () => res(JSON.parse(d))) }).on('error', rej)
 })
 
+// profile 是固定名，启动前先删上一轮那份（详见 scripts/_profile.cjs）
+dropProfileSync(process.env.TEMP + '/edgenavdiag')
 const child = spawn(EDGE, [
   '--headless=new', '--disable-gpu', '--enable-unsafe-swiftshader', '--no-first-run',
   '--remote-debugging-port=' + PORT, '--user-data-dir=' + process.env.TEMP + '/edgenavdiag',

@@ -15,6 +15,7 @@
  */
 const { spawn, spawnSync } = require('child_process')
 const http = require('http')
+const { dropProfileSync } = require('./_profile.cjs')
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
 const BASE = process.env.SHOT_BASE || 'http://127.0.0.1:5173/'
@@ -47,6 +48,8 @@ async function runPage(key, port) {
   const cfg = PAGES[key]
   console.log(`\n${'='.repeat(64)}\n=== ${cfg.label} ===\n${'='.repeat(64)}`)
 
+  // 固定名 profile，先删上一轮那份再启动（详见 scripts/_profile.cjs）
+  dropProfileSync(process.env.TEMP + '/edge-look-' + key)
   child = spawn(EDGE, [
     '--headless=new', '--disable-gpu', '--enable-unsafe-swiftshader', '--no-first-run',
     '--remote-debugging-port=' + port, '--user-data-dir=' + process.env.TEMP + '/edge-look-' + key,

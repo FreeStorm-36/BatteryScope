@@ -47,6 +47,9 @@ export const videoSlots = [
     ],
     avoid: '不要出现"电池内部是液态锂"这类错误表述；不要展示破坏满电电芯的危险操作。',
     note: '本作品的三维模型是"程序化重建"，真实剖切实拍能补上"实物长什么样"这一层——这是动画给不了的。',
+    candidates: [
+      { label: '自拍 / 自录优先：18650 剖切件或拆解实拍（用放完电的电芯；注意给品牌商标打码；不做穿孔、挤压等危险操作）', url: '', license: '自制 · 完全自有' }
+    ],
     status: 'planned',
     file: 'ch02-teardown.mp4',
     src: '',
@@ -146,7 +149,15 @@ export const videoSlots = [
       '后果二：枝晶可能刺穿隔膜，造成内短路的安全隐患'
     ],
     avoid: '不要演示或鼓励拆解、穿刺、短路等危险操作。',
-    note: 'NASA/NREL 的 Battery Failure Databank 有真实同步辐射 X 射线影像（1700+ fps），录下了电芯内部热失控的完整过程——这是全网独此一家、别的科普号做不出来的素材，也是"动画示意"无法替代的现实证据。详见 docs/教学视频需求清单.md 第 2.1 节。',
+    note: 'NASA/NREL 的 Battery Failure Databank 有真实同步辐射 X 射线影像（1700+ fps），录下了电芯内部热失控的完整过程——这是全网独此一家、别的科普号做不出来的素材，也是"动画示意"无法替代的现实证据。详见 docs/教学视频需求清单.md 第 0.2 节 A1—A7。',
+    // 已核过授权的候选素材（链接于 2026-10-15 逐个核对）。
+    // 这些影像基本是**无解说的科研录像**，正好由我们自己配中文旁白与字幕。
+    candidates: [
+      { label: 'NREL · Battery Failure Databank 数据页（内含 X 射线视频库入口）', url: 'https://www.nrel.gov/transportation/battery-failure', license: '美国能源部开放数据 · 公有领域' },
+      { label: 'ORNL · 锂枝晶生长实时纳米影像（美国能源部橡树岭国家实验室）', url: 'https://www.youtube.com/watch?v=rpPUTM_u_PM', license: '美国能源部国家实验室作品' },
+      { label: 'PNNL · 枝晶 / 晶须生长影像（备选）', url: 'https://www.pnnl.gov/news-media/scientists-pinpoint-cause-harmful-dendrites-and-whiskers-lithium-batteries', license: '同上' },
+      { label: 'Wikimedia Commons · 硅负极充放电原位 SEM（备选）', url: 'https://commons.wikimedia.org/wiki/File:In-situ-Scanning-Electron-Microscopy-of-Silicon-Anode-Reactions-in-Lithium-Ion-Batteries-during-srep36153-s4.ogv', license: 'CC BY 4.0 · 署名即可用' }
+    ],
     status: 'planned',
     file: 'ch04-plating.mp4',
     src: '',
@@ -174,6 +185,10 @@ export const videoSlots = [
     ],
     avoid: '不要把数据集参数与本作品的 BS-01 概念标本混为一谈——两者是不同对象。',
     note: '参数细节网上找不到对得上的现成视频，**只能自己录**。这一条直接影响"数据可信度"的说服力，性价比高。',
+    candidates: [
+      { label: '自录：页面录屏 + 口播（数据集参数需本作品自己讲）', url: '', license: '自制 · 完全自有' },
+      { label: '原始数据源（背景资料，非视频）', url: 'https://catalog.data.gov/dataset/li-ion-battery-aging-datasets', license: 'Public Domain · 美国政府作品' }
+    ],
     status: 'planned',
     file: 'ch05-nasa.mp4',
     src: '',
@@ -226,6 +241,9 @@ export const videoSlots = [
     ],
     avoid: '不要把预测区间说成"置信区间"或"概率保证"——它只是这条基线的离散程度表达。',
     note: '讲的是本团队自己的算法与结果，网上不存在对应内容，**只能自己录**。这条同时是"学生实质性贡献"的直接证据，对参赛纪律审查有利。',
+    candidates: [
+      { label: '自录：本作品第 07 章页面录屏 + 口播（网上无对应内容）', url: '', license: '自制 · 完全自有' }
+    ],
     status: 'planned',
     file: 'ch07-holdout.mp4',
     src: '',

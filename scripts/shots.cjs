@@ -4,13 +4,16 @@
 const { spawn, spawnSync } = require('child_process')
 const fs = require('fs')
 const http = require('http')
+const { mkProfile, dropProfile, dropProfileSync, sweepStale } = require('./_profile.cjs')
 
 // 收尾必须连子进程一起清。只 child.kill() 主进程会留下十几个 headless 渲染进程，
 // 攒够之后后续脚本会被拖到超时（踩过一次，残留 25 个）。
 let child = null
+let profile = null
 function killTree() {
   if (!child) return
   try { spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' }) } catch { /* ignore */ }
+  child = null
 }
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
@@ -31,9 +34,12 @@ const get = (url) => new Promise((res, rej) => {
 })
 
 async function shoot(name, hash, port) {
+  // profile 必须收尾删掉：每个约 80—100 MB，且名字带时间戳、不会被复用，
+  // 不删就会一轮一轮往系统盘里堆（详见 scripts/_profile.cjs 头部说明）。
+  profile = mkProfile('es-' + port + '-')
   child = spawn(EDGE, [
     '--headless=new', '--disable-gpu', '--enable-unsafe-swiftshader', '--no-first-run',
-    '--remote-debugging-port=' + port, '--user-data-dir=' + (process.env.TEMP || '.') + '/es-' + port + '-' + Date.now(),
+    '--remote-debugging-port=' + port, '--user-data-dir=' + profile,
     `--window-size=${W},${H}`, '--hide-scrollbars',
     `${BASE}?p=${name}#` + hash.replace(/^#/, '')
   ], { stdio: 'ignore' })
@@ -43,7 +49,7 @@ async function shoot(name, hash, port) {
     try { list = await get(`http://127.0.0.1:${port}/json/list`); if (list?.some((t) => t.type === 'page')) break } catch (e) {}
     await sleep(400)
   }
-  if (!list) { killTree(); child = null; throw new Error('无法连接调试端口 ' + port) }
+  if (!list) { killTree(); dropProfileSync(profile); profile = null; throw new Error('无法连接调试端口 ' + port) }
   const ws = new WebSocket(list.find((t) => t.type === 'page').webSocketDebuggerUrl)
   await new Promise((r) => (ws.onopen = r))
   let id = 0
@@ -75,11 +81,13 @@ async function shoot(name, hash, port) {
     clip: { x: 0, y: scrollY, width: W, height: H - 8, scale: 1 }
   })
   fs.writeFileSync(OUT + name + '.png', Buffer.from(shot.result.data, 'base64'))
-  ws.close(); killTree(); child = null
+  ws.close(); killTree()
+  await dropProfile(profile); profile = null
   return info
 }
 
 ;(async () => {
+  sweepStale('es-')   // 自我修复：顺手清掉历史遗留的 profile 目录
   let bad = 0
   for (let i = 0; i < PAGES.length; i++) {
     const [name, hash] = PAGES[i]
@@ -90,4 +98,4 @@ async function shoot(name, hash, port) {
     console.log((ok ? 'ok  ' : 'BAD ') + name, '| expect=' + hash, '| got=' + got, '|', info)
   }
   process.exit(bad ? 2 : 0)
-})().catch((e) => { console.error('ERROR', e.message); process.exit(1) })
+})().catch((e) => { killTree(); dropProfileSync(profile); console.error('ERROR', e.message); process.exit(1) })

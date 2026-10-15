@@ -32,6 +32,20 @@
       </ul>
       <p class="vp-avoid"><i>注意</i>{{ slot.avoid }}</p>
       <p v-if="slot.note" class="vp-note"><i>取舍</i>{{ slot.note }}</p>
+
+      <!-- 已核实授权的候选素材（开发态专用，正式构建不渲染）。
+           带链接的可直接点开核对；标注了授权方式，便于写"原创性与知识产权声明"。 -->
+      <div v-if="slot.candidates && slot.candidates.length" class="vp-cands">
+        <i>候选素材</i>
+        <ul>
+          <li v-for="(c, i) in slot.candidates" :key="i">
+            <a v-if="c.url" :href="c.url" target="_blank" rel="noopener noreferrer">{{ c.label }}</a>
+            <span v-else>{{ c.label }}</span>
+            <em v-if="c.license">{{ c.license }}</em>
+          </li>
+        </ul>
+      </div>
+
       <p class="vp-file"><i>放这里</i>public/media/{{ slot.file }}</p>
     </div>
 
@@ -101,6 +115,19 @@ const dev = computed(() => showPlaceholder())
   /* 取舍说明：这条为什么建议做 / 为什么可以不做 */
   .vp-note i { color: var(--cyan); }
   .vp-file { font-family: var(--mono); font-size: 11.5px; }
+
+  /* 候选素材清单：只在开发态出现，用于核对链接与授权方式 */
+  .vp-cands {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(120, 180, 255, 0.2);
+    > i { display: inline-block; min-width: 34px; margin-right: 8px; font-style: normal; color: var(--blue); font-size: 11.5px; }
+    ul { margin: 6px 0 0; padding-left: 18px; }
+    li { font-size: 12.5px; color: var(--text-2); line-height: 1.8; }
+    a {
+      color: var(--cyan); text-decoration: none; border-bottom: 1px solid rgba(34, 211, 238, 0.35);
+      &:hover { color: var(--blue); border-bottom-color: rgba(77, 168, 255, 0.6); }
+    }
+    em { display: inline-block; margin-left: 8px; font-style: normal; font-size: 11px; color: var(--text-3); }
+  }
 }
 
 @media (max-width: 767px) {

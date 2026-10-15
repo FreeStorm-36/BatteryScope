@@ -9,11 +9,14 @@ const { spawn, spawnSync } = require('child_process')
 const fs = require('fs')
 const http = require('http')
 const path = require('path')
+const { mkProfile, dropProfile, dropProfileSync, sweepStale } = require('./_profile.cjs')
 
 let child = null
+let profile = null
 function killTree() {
   if (!child) return
   try { spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' }) } catch { /* ignore */ }
+  child = null
 }
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
@@ -119,9 +122,12 @@ const PROBE = `(function(){
 })()`
 
 async function audit(name, hash, port) {
+  // profile 收尾必须删掉（每个约 80—100 MB，且名字带时间戳、不会被复用）。
+  // 不删会逐轮往系统盘堆，最终整个工具链因 ENOSPC 瘫痪 —— 详见 scripts/_profile.cjs。
+  profile = mkProfile('mob-' + port + '-')
   child = spawn(EDGE, [
     '--headless=new', '--disable-gpu', '--enable-unsafe-swiftshader', '--no-first-run',
-    '--remote-debugging-port=' + port, '--user-data-dir=' + (process.env.TEMP || '.') + '/mob-' + port + '-' + Date.now(),
+    '--remote-debugging-port=' + port, '--user-data-dir=' + profile,
     `--window-size=${VW},${VH}`, '--hide-scrollbars',
     `${BASE}?m=${name}#` + hash.replace(/^#/, '')
   ], { stdio: 'ignore' })
@@ -131,7 +137,7 @@ async function audit(name, hash, port) {
     try { list = await get(`http://127.0.0.1:${port}/json/list`); if (list?.some((t) => t.type === 'page')) break } catch (e) { /* retry */ }
     await sleep(400)
   }
-  if (!list) { killTree(); child = null; throw new Error('无法连接调试端口 ' + port) }
+  if (!list) { killTree(); dropProfileSync(profile); profile = null; throw new Error('无法连接调试端口 ' + port) }
   const ws = new WebSocket(list.find((t) => t.type === 'page').webSocketDebuggerUrl)
   await new Promise((r) => (ws.onopen = r))
   let id = 0
@@ -167,11 +173,13 @@ async function audit(name, hash, port) {
   })
   fs.writeFileSync(OUT + name + '-full.png', Buffer.from(full.result.data, 'base64'))
 
-  ws.close(); killTree(); child = null
+  ws.close(); killTree()
+  await dropProfile(profile); profile = null
   return info
 }
 
 ;(async () => {
+  sweepStale('mob-')   // 自我修复：顺手清掉历史遗留的 profile 目录
   for (let i = 0; i < PAGES.length; i++) {
     const [name, hash] = PAGES[i]
     const t0 = Date.now()
