@@ -12,7 +12,7 @@
 
       <!-- 对话面板 -->
       <transition name="robot-pop">
-        <section v-if="panelOpen" class="robot-panel panel" role="dialog" aria-label="学习助手小锂">
+        <section v-if="panelOpen" ref="robotPanel" class="robot-panel panel" role="dialog" aria-label="学习助手小锂" tabindex="-1">
           <header class="rp-head">
             <span class="rp-avatar"><RobotFace :mood="mood" :size="40" /></span>
             <div class="rp-id">
@@ -67,8 +67,15 @@ import IconGlyph from './IconGlyph.vue'
 import RobotFace from './RobotFace.vue'
 import { ask, assistantStatus } from '../services/aiAssistant.js'
 import { assistantQueue, takeAssistant } from '../services/assistantBus.js'
+import { useDialog } from '../composables/useDialog.js'
 
 const panelOpen = ref(false)
+const robotPanel = ref(null)
+
+// 小锂是浮在内容上的非模态面板：Esc 关闭 + 焦点移入 / 归还就够了。
+// trap 和 lockScroll 都关掉 —— 把 Tab 困在聊天框里、或锁住背景滚动，
+// 都会让用户没法一边看页面一边提问。
+useDialog(panelOpen, robotPanel, { trap: false, lockScroll: false })
 const draft = ref('')
 const thinking = ref(false)
 const mood = ref('idle')

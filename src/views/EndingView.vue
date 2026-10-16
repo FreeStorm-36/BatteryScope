@@ -45,11 +45,13 @@
                 <p>当前 SOH <b class="num cyan">{{ (idleSoh * 100).toFixed(1) }}%</b></p>
               </div>
             </div>
-            <ul class="idle-steps">
-              <li v-for="(s, i) in steps" :key="i" :class="{ on: done >= i, cur: done === i }">
-                <span class="n num">{{ ['①', '②', '③', '④', '⑤', '⑥'][i] }}</span>{{ s.name }}
-              </li>
-            </ul>
+            <!-- 这里原本把六个步骤名又整整齐齐列了一遍，和左侧步骤卡完全重复 ——
+                 一屏里出现两份同名清单，读起来像"界面坏了"。
+                 换成一行的进度读数：该给的信息（走到第几步、当前在做什么）一个不少，重复没有了。 -->
+            <div class="idle-progress" role="status" aria-live="polite">
+              <span class="ip-count num">{{ done < 0 ? '0 / 6' : `${Math.min(done + 1, 6)} / 6` }}</span>
+              <b>{{ done < 0 ? '等待运行' : steps[Math.min(done, 5)].name }}</b>
+            </div>
             <p class="idle-hint">{{ done < 0 ? '点击上方按钮，看基线模型完整走一遍寿命预测 →' : '流程进行中，注意左侧步骤逐一点亮…' }}</p>
           </div>
         </transition>
@@ -263,13 +265,12 @@ onBeforeUnmount(() => { reset(); window.removeEventListener('resize', onChartRes
     .ic-liquid { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(34,211,238,0.75), rgba(77,168,255,0.5)); transition: height 0.8s ease; box-shadow: 0 0 12px rgba(34,211,238,0.4); }
   }
   .idle-meta { b { font-size: 19px; color: var(--text-1); } p { font-size: 12.5px; color: var(--text-2); margin-top: 4px; .cyan { color: var(--cyan); } } }
-  .idle-steps { display: flex; flex-direction: column; gap: 7px;
-    li { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-3); padding: 7px 12px; border: 1px dashed var(--hairline); border-radius: 8px; transition: all 0.35s;
-      .n { color: var(--text-3); }
-      &.on { color: var(--text-1); border-style: solid; border-color: rgba(77,168,255,0.35); }
-      &.on .n { color: var(--cyan); }
-      &.cur { border-color: rgba(34,211,238,0.6); box-shadow: 0 0 14px rgba(34,211,238,0.15); }
-    }
+  .idle-progress {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 9px 12px; border: 1px solid var(--hairline); border-radius: 8px;
+    background: rgba(77, 168, 255, 0.06);
+    .ip-count { font-size: 13px; color: var(--cyan); letter-spacing: 0.04em; }
+    b { font-size: 13.5px; color: var(--text-1); font-weight: 600; }
   }
   .idle-hint { margin-top: 14px; font-size: 12px; color: var(--blue); text-align: center; }
 }

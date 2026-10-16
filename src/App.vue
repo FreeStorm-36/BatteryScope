@@ -5,14 +5,21 @@
       <component :is="Component" :key="$route.path" />
     </transition>
   </router-view>
+  <!-- 换章时懒加载 chunk 的等待反馈。延迟 150ms 才出现（见 main.js），
+       所以本机快速换章不会闪。 -->
+  <div v-if="routeLoading" class="route-progress" role="status" aria-live="polite">
+    <span class="rp-sweep" aria-hidden="true"></span>
+    <span class="rp-text">正在加载章节…</span>
+  </div>
 </template>
 
 <script setup>
-import { watch } from 'vue'
+import { inject, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import LifeTrackNav from './components/LifeTrackNav.vue'
 
 const route = useRoute()
+const routeLoading = inject('routeLoading', ref(false))
 
 // 章节切换后强制回到页面顶部：
 // 固定导航高约 82px，若残留上一页的滚动位置，章节标题会被导航压住、动画区底部也会被切出视口。
@@ -42,5 +49,35 @@ watch(
 // 比桌面的 82px 矮，所以这里留 78px 就够 —— 原来写死 82px 会白多出一截空白。
 @media (max-width: 767px) {
   .page, .page-full { padding: 78px 20px 0; }
+}
+
+// ── 换章加载进度条 ──
+// 章节组件是懒加载的，chunk 没到位时路由还没切换、旧页面仍在显示，
+// 这条 3px 扫光是"系统正在干活"的唯一反馈。z-index 取 120：高于导航（100），
+// 低于章节目录浮层（180），换章时目录本来也已经收起了。
+.route-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px;
+  z-index: 120;
+  overflow: hidden;
+  background: rgba(77, 168, 255, 0.14);
+  pointer-events: none;
+}
+.rp-sweep {
+  position: absolute; inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--blue), var(--cyan), transparent);
+  animation: rp-sweep 1.05s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes rp-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+// 纯文字提示只给读屏软件：3px 的条上放不下可读文案
+.rp-text {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp-sweep { animation: none; width: 100%; opacity: 0.55; }
 }
 </style>

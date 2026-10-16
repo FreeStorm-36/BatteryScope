@@ -89,7 +89,7 @@
   <Teleport to="body">
     <transition name="sheet">
       <div v-if="sheetOpen" class="chapter-sheet" @click.self="sheetOpen = false">
-        <div class="cs-panel" role="dialog" aria-modal="true" aria-label="章节目录">
+        <div ref="csPanel" class="cs-panel" role="dialog" aria-modal="true" aria-label="章节目录" tabindex="-1">
           <div class="cs-head">
             <!-- 总时长由各章的 duration（秒）实时求和，不写死数字 ——
                  以后增删章节，这里会自动跟着变，不会再出现"各章之和与表头对不上"的老问题。 -->
@@ -123,10 +123,11 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { chapters } from '../stores/tour.js'
 import IconGlyph from './IconGlyph.vue'
+import { useDialog } from '../composables/useDialog.js'
 
 const route = useRoute()
 const shortNames = ['首页', '结构', '工作', '老化', '数据', '模型', '预测', '学习']
@@ -141,21 +142,14 @@ const prev = computed(() => chapters[current.value - 1] || null)
 const next = computed(() => chapters[current.value + 1] || null)
 
 const sheetOpen = ref(false)
+const csPanel = ref(null)
 
 // 跳转后自动收起，否则点完目录还停在遮罩上
 watch(() => route.fullPath, () => { sheetOpen.value = false })
 
-// 抽屉展开时锁住页面滚动，避免背景跟着滑
-watch(sheetOpen, (open) => { document.body.style.overflow = open ? 'hidden' : '' })
-
-function onKeydown(e) {
-  if (e.key === 'Escape') sheetOpen.value = false
-}
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
-  document.body.style.overflow = ''
-})
+// Esc 关闭、焦点移入 / 困在层内 / 关闭后归还，以及背景滚动锁，
+// 统一交给 useDialog —— 站内三处弹层共用同一套行为，避免各写一遍后逐渐漂移。
+useDialog(sheetOpen, csPanel, { trap: true, lockScroll: true })
 </script>
 
 <style scoped lang="scss">

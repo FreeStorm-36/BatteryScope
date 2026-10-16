@@ -10,6 +10,19 @@
       <span class="corner badge-line"><DataBadge type="model" text="教学设计与数据依据" />可对照、可核查</span>
     </header>
 
+    <!-- 本章在 1280 宽下实测 6000+ px，接近 5 屏：知识图谱、学习目标、两个互动、
+         八道自测题、数据集参数表、溯源表全挤在一条滚动里。不拆页（拆了会断掉
+         "一条学习路径"的叙事），改为在开头给一条跳转条，想直接做题或查来源就不用一路滚下去。
+         注意不能用 <a href="#...">：全站是 hash 路由，锚点会被 vue-router 当成路由吃掉。 -->
+    <nav class="sec-jump" aria-label="本章小节跳转">
+      <button
+        v-for="(s, i) in SECS" :key="s.n" type="button" class="sj-item"
+        @click="jumpToSec(i)"
+      >
+        <span class="sj-num num">{{ s.n }}</span>{{ s.name }}
+      </button>
+    </nav>
+
     <!-- ── 一、讲给谁 · 怎么用 ────────────────────────────── -->
     <section class="sec">
       <div class="sec-head">
@@ -199,6 +212,24 @@ import {
 
 const pad = (n) => String(n).padStart(2, '0')
 
+// 跳转条的小节清单：与模板里 .sec 的出现顺序一一对应（不是按标题文字匹配，
+// 这样改标题不会把跳转打歪）。
+const SECS = [
+  { n: '08.1', name: '讲给谁' },
+  { n: '08.2', name: '三种场景' },
+  { n: '08.3', name: '知识图谱' },
+  { n: '08.4', name: '学习目标' },
+  { n: '08.5', name: '趣味互动' },
+  { n: '08.6', name: '自测八题' },
+  { n: '08.7', name: '资料来源' }
+]
+
+function jumpToSec(i) {
+  const el = document.querySelectorAll('section.sec')[i]
+  // 顶部固定导航约 82px 高，落点要避开它 —— 具体让位量写在 .sec 的 scroll-margin-top 上
+  el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 // 自测：逐题锁定，选完立即给解析（边做边学，而不是最后统一判分）
 const picked = ref({})
 const answeredCount = computed(() => Object.keys(picked.value).length)
@@ -231,7 +262,31 @@ function resetQuiz() { picked.value = {} }
 }
 
 /* ── 区块标题 ── */
-.sec { display: flex; flex-direction: column; gap: 12px; }
+.sec { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 104px; }
+
+// ── 小节跳转条：6000+ px 的长页，先给一条"电梯" ──
+.sec-jump {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin: 0 0 22px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: rgba(19, 26, 43, 0.5);
+}
+.sj-item {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px;
+  border: 1px solid transparent; border-radius: 999px;
+  background: transparent; color: var(--text-2);
+  font-size: 13px; cursor: pointer;
+  transition: all 0.2s ease;
+  &:hover { color: var(--text-1); border-color: var(--hairline-strong); background: rgba(77, 168, 255, 0.1); }
+  .sj-num { font-size: 11.5px; color: var(--cyan); letter-spacing: 0.06em; }
+}
+@media (max-width: 767px) {
+  .sec-jump { border-radius: 14px; }
+  .sec { scroll-margin-top: 92px; }
+}
 .sec-head {
   display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
   border-bottom: 1px solid var(--hairline); padding-bottom: 10px;

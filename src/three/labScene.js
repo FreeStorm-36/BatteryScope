@@ -236,6 +236,12 @@ export function createLabScene(container, {
     pmrem.dispose()
     composer.dispose()
     renderer.dispose()
+    // 浏览器同时可存的 WebGL context 只有十几个，而 renderer.dispose() 只是释放了
+    // three 自己持有的资源，context 要等 GC 才真正归还。全站有 4 个 3D 页面，
+    // 章节组件又带 :key 每次换章都会整体重建 —— 在 context 归还跟不上创建速度时，
+    // 浏览器会丢弃最老的 context（表现为某个页面的 3D 突然变黑）。
+    // 显式交还，让 context 立刻释放。
+    renderer.forceContextLoss()
     renderer.domElement.remove()
   }
 

@@ -12,7 +12,7 @@
 
     <transition name="fade">
       <div v-if="showMeta" class="meta-overlay" @click.self="showMeta = false">
-        <aside class="meta-drawer panel" role="dialog" aria-modal="true" aria-label="数据可信度说明">
+        <aside ref="metaPanel" class="meta-drawer panel" role="dialog" aria-modal="true" aria-label="数据可信度说明" tabindex="-1">
           <div class="drawer-head"><div><p class="chapter-eyebrow">DATA PROVENANCE</p><h3>数据可信度说明</h3></div><button class="btn-ghost" @click="showMeta = false">关闭</button></div>
           <dl>
             <div><dt>数据集</dt><dd>NASA PCoE Battery Dataset</dd></div>
@@ -173,8 +173,13 @@ import ChapterGoals from '../components/ChapterGoals.vue'
 import VideoSlot from '../components/VideoSlot.vue'
 import DataBadge from '../components/DataBadge.vue'
 import IconGlyph from '../components/IconGlyph.vue'
+import { useDialog } from '../composables/useDialog.js'
 
 const showMeta = ref(false)
+const metaPanel = ref(null)
+
+// Esc 关闭、焦点移入后在层内循环、关闭时归还焦点；抽屉是模态的，背景滚动也锁住
+useDialog(showMeta, metaPanel, { trap: true, lockScroll: true })
 const selA = ref('B0005')
 const selB = ref('B0006')
 const compare = ref(false)

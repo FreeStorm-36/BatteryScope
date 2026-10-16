@@ -10,12 +10,64 @@
          图形与全站一致：深蓝底 + 霓虹蓝外壳 + 青色电解液。 -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0e1a'/%3E%3Crect x='23' y='5' width='18' height='6' rx='3' fill='%234da8ff'/%3E%3Crect x='17' y='9' width='30' height='48' rx='9' fill='none' stroke='%234da8ff' stroke-width='3.5'/%3E%3Crect x='23' y='30' width='18' height='21' rx='5' fill='%2322d3ee'/%3E%3C/svg%3E" />
     <title>BatteryScope · 锂电池生命观察站</title>
-    <script type="module" crossorigin src="./assets/index-D4uchV5w.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/vue-BRVy9j4N.js">
+    <!-- 首屏骨架样式内联在这里：外链 CSS 要等一次网络往返，内联则首帧就有形。
+         这段样式只服务 #app 里那层骨架，Vue 挂载时会把 #app 内容整体替换掉，
+         骨架随之消失，不会和任何页面样式打架。 -->
+    <style>
+      .boot-skeleton {
+        max-width: 1240px; margin: 0 auto; padding: 118px 48px 0;
+        font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+      }
+      .bs-nav {
+        position: fixed; inset: 0 0 auto 0; height: 82px;
+        background: rgba(13, 18, 32, 0.9); border-bottom: 1px solid rgba(90, 150, 220, 0.22);
+      }
+      .bs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+      .bs-bar {
+        border-radius: 8px;
+        background: linear-gradient(90deg, rgba(77, 168, 255, 0.10) 0%, rgba(77, 168, 255, 0.20) 50%, rgba(77, 168, 255, 0.10) 100%);
+        background-size: 200% 100%;
+        animation: bs-shimmer 1.4s ease-in-out infinite;
+      }
+      .bs-sm { height: 12px; width: 34%; margin-bottom: 20px; }
+      .bs-lg { height: 40px; width: 78%; margin-bottom: 14px; }
+      .bs-md { height: 16px; width: 60%; margin-bottom: 34px; }
+      .bs-btn { height: 46px; width: 180px; border-radius: 999px; }
+      .bs-panel { height: 320px; border-radius: 18px; }
+      .bs-hint {
+        margin-top: 28px; font-size: 13px; letter-spacing: 0.08em;
+        color: #8b9bb4; text-align: center;
+      }
+      @keyframes bs-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+      @media (prefers-reduced-motion: reduce) { .bs-bar { animation: none; } }
+      @media (max-width: 767px) {
+        .boot-skeleton { padding: 78px 20px 0; }
+        .bs-grid { grid-template-columns: 1fr; }
+        .bs-panel { height: 220px; }
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-De5iB1fT.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/vue-CDcswcN0.js">
     <link rel="modulepreload" crossorigin href="./assets/gsap-SFc2wnMY.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-G7uRkhEK.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-6ME7H3hj.css">
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- 首屏骨架：main.js 执行完之前，这里就是用户看到的全部内容。
+           没有它，从 HTML 到达到 Vue 挂载之间是一整块纯黑，在慢网络下会被读成"点了没反应"。 -->
+      <div class="boot-skeleton" role="status" aria-live="polite">
+        <div class="bs-nav" aria-hidden="true"></div>
+        <div class="bs-grid" aria-hidden="true">
+          <div>
+            <div class="bs-bar bs-sm"></div>
+            <div class="bs-bar bs-lg"></div>
+            <div class="bs-bar bs-md"></div>
+            <div class="bs-bar bs-btn"></div>
+          </div>
+          <div class="bs-bar bs-panel"></div>
+        </div>
+        <p class="bs-hint">正在加载 BatteryScope…</p>
+      </div>
+    </div>
   </body>
 </html>
