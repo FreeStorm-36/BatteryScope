@@ -778,9 +778,16 @@ onMounted(async () => {
       enableRotate: true,
       enableZoom: true,
       enablePan: true,
-      zoomSpeed: 0.42,
-      rotateSpeed: 0.55,
-      panSpeed: 0.72,
+      zoomSpeed: 0.58,
+      rotateSpeed: 0.62,
+      /* 手感调优（反馈"拖得动、但不够灵活"）。两个参数是关键：
+         ① dampingFactor：labScene 默认 0.055，每帧只吃掉 5.5% 的位移，要 40 帧才收敛 ——
+            表现为"跟不上手、松手后还自己漂一段"。提到 0.16 后约 12 帧收敛，明显跟手。
+         ② panSpeed：OrbitControls 的平移量按「拖动像素 ÷ 画布高度」折算，
+            全屏后画布高从约 315 px 变成 1080 px，同样的拖动距离位移只剩三分之一 ——
+            不补偿的话一进全屏就觉得"拖不动"。提到 1.35 把这一截找回来。 */
+      dampingFactor: 0.16,
+      panSpeed: 1.35,
       screenSpacePanning: true,
       minDistance: 3.6,
       maxDistance: 15,
