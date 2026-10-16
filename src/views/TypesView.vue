@@ -308,8 +308,7 @@ function buildModel() {
     rollMesh = roll
     modelGroup.add(roll)
 
-    // 顶盖组：真实电芯的顶盖盘、正极凸台与泄压阀刻痕属于同一个顶盖件，拆解时一起抬起。
-    // 负极端面留在壳体上（真实拆解是从顶部打开的，不会把底盖一起拎走）。
+    // 顶盖组：顶盖盘、正极凸台与泄压阀刻痕属于同一个顶盖件，拆解时一起让开。
     capGroupRef = new THREE.Group()
     for (const nm of ['positiveCap', 'terminal', 'ventMarks']) {
       const o = cell.getObjectByName(nm)
@@ -317,10 +316,34 @@ function buildModel() {
     }
     modelGroup.add(capGroupRef)
 
+    // 壳体组（管身+肩部）与底盖组（端面+环槽）各自成组，才能整层剥离。
+    // 子对象原本挂在 cell 下、而 cell 正处于原点，改挂到同为原点的组里不会改变世界坐标。
+    const regroup = (names) => {
+      const g = new THREE.Group()
+      for (const nm of names) {
+        const o = cell.getObjectByName(nm)
+        if (o) { cell.remove(o); g.add(o) }
+      }
+      modelGroup.add(g)
+      return g
+    }
+    const shellGroup = regroup(['shellBody', 'shoulder'])
+    const negCapGroup = regroup(['negativeCap', 'bottomGroove'])
+
+    /* 剥离层序：由外到内。点击某个部件时，从最外层一路剥到它所在的那一层 ——
+       这就是"剥洋葱"的读法：点钢壳会先脱掉标签、再让开钢壳本身。
+       位移一律走"往侧面让开"，而不是上下抬：模型基准缩放 0.6、相机距离 7.2 / fov 40 下，
+       画框垂直只容得下约 5.24 世界单位，而模型自身就高 3.9 —— 上下几乎没有余量，
+       早期版本把标签往上抬 2.4 单位（= 1.44 世界单位）其实已经出画了。
+       横向余量宽得多，所以外层往左让、端盖往右让，互不遮挡。 */
+    const layer = (obj, off, from, to) => ({
+      obj, off: new THREE.Vector3(...off), base: obj.position.clone(), from, to
+    })
     teardownParts = [
-      { obj: wrap, base: wrap.position.clone(), off: new THREE.Vector3(0, 2.4, 0), fadeTo: 0.08, phase: 0 },
-      { obj: capGroupRef, base: capGroupRef.position.clone(), off: new THREE.Vector3(0, 3.2, 0), fadeTo: 1, phase: 1 },
-      { obj: roll, base: roll.position.clone(), off: new THREE.Vector3(0, 0.5, 3.4), fadeTo: 1, phase: 2, fan: true }
+      layer(wrap, [-5.4, 0.4, 0], 0, 22),
+      layer(shellGroup, [-3.0, 0, 0], 22, 42),
+      layer(negCapGroup, [3.0, 0, 0], 42, 58),
+      layer(capGroupRef, [4.4, 0, 0], 58, 72)
     ]
   } else if (shape.value === 'prism') {
     const cell = buildPrismaticCell()
@@ -367,17 +390,36 @@ const tdPercent = ref(0)
 const tdPlaying = ref(false)
 const TD_STEPS = [
   { at: 0, label: '整体', caption: '' },
-  { at: 25, label: '① 移除标签/外膜', caption: '先脱掉最外层的包装与热缩膜。' },
-  { at: 50, label: '② 抬起顶盖与安全结构', caption: '顶盖集成着极柱、安全阀与绝缘件。' },
-  { at: 75, label: '③ 拉出卷芯/叠片', caption: '取出真正的能量核心。' },
-  { at: 100, label: '④ 展开电极层', caption: '正极—隔膜—负极，逐层展开。' }
+  { at: 22, label: '① 剥掉热缩膜', caption: '最外层是绝缘与标识用的热缩膜，脱掉它才看得见钢壳。' },
+  { at: 42, label: '② 剥开镀镍钢壳', caption: '钢壳同时是承压件、密封件，也是电流回路的一部分。' },
+  { at: 58, label: '③ 让开顶盖与安全阀', caption: '顶盖集成正极凸台、泄压阀刻痕与绝缘件。' },
+  { at: 72, label: '④ 取下负极端面', caption: '底盖内接负极极耳，与钢壳等电位。' },
+  { at: 100, label: '⑤ 散开卷芯夹层', caption: '正极—隔膜—负极—隔膜，一层层摊开成夹层。' }
 ]
 const tdPhase = computed(() => [...TD_STEPS].reverse().find((s) => tdPercent.value >= s.at) || TD_STEPS[0])
 
+/* 点击部件 → 自动走到它所在的档位：
+   外部件（膜 / 壳 / 顶盖 / 底盖）是"剥离"，它和它外面的层一起让开；
+   内部件（卷芯 / 极耳）剥到最后一档，并把卷芯散开成夹层。 */
+const PEEL_AT = { wrap: 22, shell: 42, terminal: 58, vent: 58, negativeCap: 72, roll: 100, tabs: 100 }
+
+function peelTo(id) {
+  const target = PEEL_AT[id]
+  if (target == null) return
+  // 手动播放会自己在渲染循环里推进 tdPercent，不先停掉就是两条时间线互相抢
+  tdPlaying.value = false
+  gsap.to(tdPercent, { value: target, duration: 1.15, ease: 'power2.inOut', overwrite: true })
+}
+
 function applyTeardown(p) {
+  const pc = p * 100
   for (const tp of teardownParts) {
-    const local = Math.max(0, Math.min(1, (p * 100 - tp.phase * 25) / 25))
-    if (tp.opacityOnly && tp.obj) {
+    if (!tp.obj) continue
+    // 圆柱用显式区间（from/to），方形与软包仍沿用四等分的 phase —— 两者语义等价，兼容并存
+    const from = tp.from != null ? tp.from : tp.phase * 25
+    const to = tp.from != null ? tp.to : tp.phase * 25 + 25
+    const local = Math.max(0, Math.min(1, (pc - from) / Math.max(1e-6, to - from)))
+    if (tp.opacityOnly && tp.obj.material) {
       const m = tp.obj.material
       m.transparent = true
       m.opacity = (m.__baseOpacity ?? 1) + (tp.fadeTo - (m.__baseOpacity ?? 1)) * local
@@ -391,11 +433,23 @@ function applyTeardown(p) {
       tp.obj.material.opacity = base + (tp.fadeTo - base) * local
     }
   }
-  // 第 4 步：卷芯微展开，暗示层状结构
-  if (rollMesh && shape.value !== 'pouch' && shape.value !== 'prism') {
-    const local4 = Math.max(0, Math.min(1, (p * 100 - 75) / 25))
-    rollMesh.scale.set(1 + local4 * 0.14, 1 + local4 * 0.05, 1 + local4 * 0.14)
-    rollMesh.rotation.y = local4 * 0.6
+
+  /* 最后一档：把卷芯摊开成"三明治"。
+     卷芯那 24 片是"正极—隔膜—负极—隔膜"循环密绕出来的，每片都有 layerIndex。
+     沿同一个方向逐片平移（步长 0.15 unit，24 片共拉开约 3.4 unit），
+     螺旋就被"抽直"成一串依次错开的带状层 —— 从侧面看正是
+     紫（正极）—浅灰（隔膜）—蓝灰（负极）—浅灰（隔膜）这样一段段重复的夹层。
+     ⚠️ 这里刻意不做"各层朝自己角向散开"的放射式展开：那会散成一朵花，
+     每层的层序关系反而看不出来，讲不了"叠层顺序"这件事。
+     方形与软包没有这套元数据，循环自然跳过。 */
+  if (rollMesh) {
+    const e = Math.max(0, Math.min(1, (pc - 72) / 28))
+    const k = e * e * (3 - 2 * e) // smoothstep：起步与收尾都慢，中段快
+    for (const o of rollMesh.children) {
+      const idx = o.userData.layerIndex
+      if (idx == null) continue
+      o.position.set(k * idx * 0.15, 0, 0)
+    }
   }
 }
 function resetTeardown() { tdPercent.value = 0; tdPlaying.value = false }
@@ -477,6 +531,7 @@ function onPointerMove(e) {
 
 function onSelect(id) {
   selected.value = id
+  peelTo(id) // 外部件剥离、内部件散开（见 PEEL_AT / applyTeardown）
   const hs = curHotspots.value.find((h) => h.partId === id)
   const anchor = hs ? new THREE.Vector3(...hs.anchor) : new THREE.Vector3()
   const dir = scene.camera.position.clone().sub(scene.controls.target).normalize()
@@ -503,6 +558,9 @@ const HOME_TARGET = [0, 0, 0]
 
 function deselect() {
   selected.value = null
+  // "返回整体"＝把拆解也收回去，否则模型停在被剥开的状态、和"整体"这个词矛盾
+  gsap.killTweensOf(tdPercent)
+  resetTeardown()
   for (const d of dimmables) {
     d.mat.opacity = d.mat.__baseOpacity
     if (d.mat.emissive && d.mat.__baseEmissive) { d.mat.emissive.copy(d.mat.__baseEmissive); d.mat.emissiveIntensity = d.mat.__baseEmissiveI }

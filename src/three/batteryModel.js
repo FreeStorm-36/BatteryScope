@@ -60,25 +60,25 @@ export function buildCylindricalCell({
   const bodyH = bodyTop - bodyBottom
 
   // 1) 管身
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r, bodyH, 64, 1, true), steel)
+  const body = tagPart(new THREE.Mesh(new THREE.CylinderGeometry(r, r, bodyH, 64, 1, true), steel), 'shell', '镀镍钢壳')
   body.position.y = (bodyTop + bodyBottom) / 2
   body.name = 'shellBody'
   g.add(body)
 
   // 2) 肩部收口：真实电芯顶部的斜肩，圆柱过渡到顶盖
-  const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(topR, r, shoulderH, 64, 1, true), steel)
+  const shoulder = tagPart(new THREE.Mesh(new THREE.CylinderGeometry(topR, r, shoulderH, 64, 1, true), steel), 'shell', '镀镍钢壳')
   shoulder.position.y = shoulderBottom + shoulderH / 2
   shoulder.name = 'shoulder'
   g.add(shoulder)
 
   // 3) 顶盖盘
-  const plate = new THREE.Mesh(new THREE.CylinderGeometry(topR, topR, plateH, 64), steelBright)
+  const plate = tagPart(new THREE.Mesh(new THREE.CylinderGeometry(topR, topR, plateH, 64), steelBright), 'terminal', '正极端子')
   plate.position.y = plateBottom + plateH / 2
   plate.name = 'positiveCap'
   g.add(plate)
 
   // 4) 正极凸台（18650 Φ5.5 mm / 21700 Φ6.0 mm / 26650 ≈Φ7.4 mm）
-  const terminal = new THREE.Mesh(new THREE.CylinderGeometry(capR, capR * 1.08, capH, 40), steelBright)
+  const terminal = tagPart(new THREE.Mesh(new THREE.CylinderGeometry(capR, capR * 1.08, capH, 40), steelBright), 'terminal', '正极端子')
   terminal.position.y = capBottom + capH / 2
   terminal.name = 'terminal'
   g.add(terminal)
@@ -90,7 +90,7 @@ export function buildCylindricalCell({
   for (let i = 0; i < 3; i++) {
     const a = (i / 3) * Math.PI * 2
     const len = (topR - capR) * 1.5
-    const mark = new THREE.Mesh(new THREE.BoxGeometry(len, 0.008, 0.016), markMat)
+    const mark = tagPart(new THREE.Mesh(new THREE.BoxGeometry(len, 0.008, 0.016), markMat), 'vent', '安全阀 / 排气结构')
     const mid = capR + len / 2
     mark.position.set(Math.cos(a) * mid, plateBottom + plateH + 0.002, Math.sin(a) * mid)
     mark.rotation.y = -a
@@ -99,12 +99,12 @@ export function buildCylindricalCell({
   g.add(vent)
 
   // 6) 负极端面 + 底部环形凹槽（真实电芯底部的一圈压痕）
-  const bottom = new THREE.Mesh(new THREE.CylinderGeometry(r, r, bottomH, 64), steelDark)
+  const bottom = tagPart(new THREE.Mesh(new THREE.CylinderGeometry(r, r, bottomH, 64), steelDark), 'negativeCap', '负极底盖')
   bottom.position.y = -h / 2 + bottomH / 2
   bottom.name = 'negativeCap'
   g.add(bottom)
 
-  const groove = new THREE.Mesh(new THREE.TorusGeometry(r * 0.62, 0.014, 8, 48), steelDark)
+  const groove = tagPart(new THREE.Mesh(new THREE.TorusGeometry(r * 0.62, 0.014, 8, 48), steelDark), 'negativeCap', '负极底盖')
   groove.rotation.x = Math.PI / 2
   groove.position.y = -h / 2 + bottomH + 0.004
   groove.name = 'bottomGroove'
@@ -123,6 +123,7 @@ export function buildCylindricalCell({
   )
   wrap.position.y = bodyBottom + wrapMargin + wrapH / 2
   wrap.name = 'wrap'
+  tagPart(wrap, 'wrap', '热缩膜标签')
   g.add(wrap)
 
   g.userData.radius = r
@@ -510,10 +511,19 @@ export function buildTightJellyRoll({ r = 1.0, h = 3.1, turns = 6 } = {}) {
   const H = h * 0.98
   for (let i = 0; i < layers; i++) {
     const radIn = r * 0.1 + i * layerGap
-    const mat = i % 4 === 0 ? M.cathode : i % 4 === 2 ? M.anode : M.separator
+    const kind = i % 4 === 0 ? 'cathode' : i % 4 === 2 ? 'anode' : 'separator'
+    const mat = kind === 'cathode' ? M.cathode : kind === 'anode' ? M.anode : M.separator
     const a0 = i * Math.PI * 0.36
-    const geo = ribbonArcGeo({ radIn, radOut: radIn + layerT, a0, a1: a0 + Math.PI * 1.62, h: H, seg: 56 })
-    g.add(new THREE.Mesh(geo, mat))
+    const a1 = a0 + Math.PI * 1.62
+    const geo = ribbonArcGeo({ radIn, radOut: radIn + layerT, a0, a1, h: H, seg: 56 })
+    const mesh = new THREE.Mesh(geo, mat)
+    // 散开用元数据：层序号与层种类。TypesView 拆解到最后一档时按 layerIndex
+    // 沿同一方向逐片平移，把螺旋"抽直"成一串依次错开的带状层，
+    // 让"正极—隔膜—负极—隔膜"这组夹层（三明治）真正分得开。
+    mesh.userData.layerIndex = i
+    mesh.userData.layerKind = kind
+    tagPart(mesh, 'roll', '卷芯')
+    g.add(mesh)
   }
   // 中心卷针孔
   const holeRing = new THREE.Mesh(
@@ -521,14 +531,18 @@ export function buildTightJellyRoll({ r = 1.0, h = 3.1, turns = 6 } = {}) {
     M.separator
   )
   holeRing.rotation.x = Math.PI / 2
+  tagPart(holeRing, 'roll', '卷芯')
   g.add(holeRing)
   // 极耳：正极铝在顶端、负极铜在底端（真实引出方式）
-  g.add(buildTabs({ r, h, len: Math.max(0.55, h * 0.16) }))
+  const tabs = buildTabs({ r, h, len: Math.max(0.55, h * 0.16) })
+  tabs.traverse((o) => { if (o.isMesh) tagPart(o, 'tabs', '正负极极耳') })
+  g.add(tabs)
   // 上下绝缘垫
   const insMat = M.insulator()
   for (const y of [h / 2 - 0.03, -h / 2 + 0.03]) {
     const disc = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.97, r * 0.97, 0.05, 40), insMat)
     disc.position.y = y
+    tagPart(disc, 'roll', '卷芯')
     g.add(disc)
   }
   return g
