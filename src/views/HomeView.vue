@@ -226,8 +226,10 @@ onMounted(async () => {
   // 3D 展台刻意放在最后：three 走动态导入，下载期间上面的 2D 背景与计时器已经在跑，
   // 首屏不会为了一个装饰性展台而空着。
   if (threeBox.value) {
-    const [THREE, { createLabScene, PALETTE }, { buildCylindricalCell, buildParticleFlow }] = await Promise.all([
-      import('three'),
+    const [
+      { createLabScene, PALETTE, Group, Mesh, MeshBasicMaterial, TorusGeometry, Clock, AdditiveBlending, DoubleSide },
+      { buildCylindricalCell, buildParticleFlow }
+    ] = await Promise.all([
       import('../three/labScene.js'),
       import('../three/batteryModel.js')
     ])
@@ -250,7 +252,7 @@ onMounted(async () => {
         target: [-1.15, 0, 0]   // 绕电池本体旋转（标本被左移到 x = -1.15）
       }
     })
-    const specimen = new THREE.Group()
+    const specimen = new Group()
     // 整体左移：右下角有「状态快照」浮层，电池居中时其右侧会被浮层压住
     specimen.position.x = -1.15
     scene.scene.add(specimen)
@@ -262,16 +264,16 @@ onMounted(async () => {
     specimen.add(cell)
 
     // 展台底座：双层光环，做极缓慢的呼吸
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.34 })
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.35, 0.012, 8, 128), ringMat)
+    const ringMat = new MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.34 })
+    const ring = new Mesh(new TorusGeometry(2.35, 0.012, 8, 128), ringMat)
     ring.rotation.x = Math.PI / 2
     ring.position.y = -HALF - 0.5
     ring.scale.z = 0.78
     specimen.add(ring)
 
-    const ringInner = new THREE.Mesh(
-      new THREE.TorusGeometry(3.15, 0.006, 8, 128),
-      new THREE.MeshBasicMaterial({ color: 0x4da8ff, transparent: true, opacity: 0.15 })
+    const ringInner = new Mesh(
+      new TorusGeometry(3.15, 0.006, 8, 128),
+      new MeshBasicMaterial({ color: 0x4da8ff, transparent: true, opacity: 0.15 })
     )
     ringInner.rotation.x = Math.PI / 2
     ringInner.position.y = -HALF - 0.5
@@ -280,11 +282,11 @@ onMounted(async () => {
     gsap.to(ringMat, { opacity: 0.1, duration: 3.4, yoyo: true, repeat: -1, ease: 'sine.inOut' })
 
     // 光带扫描：一条细环沿轴向缓慢上移，两端用 sin 包络淡出，避免循环时"跳回"
-    const sweepMat = new THREE.MeshBasicMaterial({
+    const sweepMat = new MeshBasicMaterial({
       color: 0x7fe6ff, transparent: true, opacity: 0,
-      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+      blending: AdditiveBlending, depthWrite: false, side: DoubleSide
     })
-    const sweep = new THREE.Mesh(new THREE.TorusGeometry(1.075, 0.007, 8, 96), sweepMat)
+    const sweep = new Mesh(new TorusGeometry(1.075, 0.007, 8, 96), sweepMat)
     sweep.rotation.x = Math.PI / 2
     specimen.add(sweep)
 
@@ -299,7 +301,7 @@ onMounted(async () => {
     })
     specimen.add(liFlow.mesh)
 
-    const clock = new THREE.Clock()
+    const clock = new Clock()
     let sweepT = 0
     const loop = () => {
       raf = requestAnimationFrame(loop)

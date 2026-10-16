@@ -8,6 +8,17 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 
+// 具名再导出：给"动态导入本模块"的调用方（HomeView 的首页展台）用。
+// 原因：`const THREE = await import('three')` 拿到的是运行时命名空间对象，
+// Rollup 无法静态分析它访问了哪些属性，于是整个 three 都会被保留 ——
+// 实测这种写法让 three 块从 507 KB（tree-shaken）涨到 684 KB，
+// 连 AudioListener / PositionalAudio 这种全站从不使用的部分也被打包进来。
+// 走具名再导出，用途在编译期就是确定的，摇树重新生效。
+export {
+  Group, Mesh, MeshBasicMaterial, TorusGeometry, Clock,
+  AdditiveBlending, DoubleSide
+} from 'three'
+
 export const pool = {
   dummy: new THREE.Object3D(),
   color: new THREE.Color(),
