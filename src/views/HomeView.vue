@@ -103,11 +103,14 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import gsap from 'gsap'
-import * as THREE from 'three'
 import ChapterFooter from '../components/ChapterFooter.vue'
 import ChapterGoals from '../components/ChapterGoals.vue'
-import { createLabScene, PALETTE } from '../three/labScene.js'
-import { buildCylindricalCell, buildParticleFlow } from '../three/batteryModel.js'
+
+// ⚠️ three / labScene / batteryModel 一律不做静态导入。
+// 首页是 main.js 里唯一被同步引入的视图，一旦在这里静态 import 'three'，
+// 整包 three（约 508 KB 原始 / 128 KB gzip）会被写进 index.html 的 modulepreload，
+// 直接变成首屏关键路径上最大的一块 —— 而它只服务右侧那个装饰性展台。
+// 改成动态导入后，首屏先出 DOM 与 2D 背景，three 在后台并行下载。
 
 const bgCanvas = ref(null)
 const threeBox = ref(null)
@@ -163,6 +166,8 @@ let tagTimer = null
 let readingTimer = null
 let ctx = null
 let bgRaf = 0
+// three 是异步下载的：组件可能在下载完成前就被卸载，用它来放弃迟到的挂载。
+let disposed = false
 const dots = []
 const mouse = { x: 0, y: 0 }
 
@@ -173,7 +178,7 @@ const fit = () => {
   c.height = innerHeight
 }
 
-onMounted(() => {
+onMounted(async () => {
   gsap.from('.home .eyebrow', { opacity: 0, y: 16, duration: 0.65, delay: 0.05 })
   gsap.from('.home h1', { opacity: 0, y: 28, duration: 0.85, delay: 0.18 })
   gsap.from('.home .lead', { opacity: 0, y: 18, duration: 0.75, delay: 0.38 })
@@ -192,7 +197,44 @@ onMounted(() => {
     temp.value = 24.6 + Math.sin(Date.now() / 5200) * 0.2
   }, 800)
 
+  const canvas = bgCanvas.value
+  ctx = canvas.getContext('2d')
+  fit()
+  window.addEventListener('resize', fit)
+  for (let i = 0; i < 34; i++) {
+    dots.push({
+      x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+      r: 0.5 + Math.random() * 1.2, vy: 0.08 + Math.random() * 0.22,
+      vx: (Math.random() - 0.5) * 0.12, o: 0.06 + Math.random() * 0.13
+    })
+  }
+  const bgLoop = () => {
+    bgRaf = requestAnimationFrame(bgLoop)
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    for (const d of dots) {
+      d.y -= d.vy
+      d.x += d.vx
+      if (d.y < -4) { d.y = canvas.height + 4; d.x = Math.random() * canvas.width }
+      ctx.beginPath()
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2)
+      ctx.fillStyle = `rgba(77,168,255,${d.o})`
+      ctx.fill()
+    }
+  }
+  bgLoop()
+
+  // 3D 展台刻意放在最后：three 走动态导入，下载期间上面的 2D 背景与计时器已经在跑，
+  // 首屏不会为了一个装饰性展台而空着。
   if (threeBox.value) {
+    const [THREE, { createLabScene, PALETTE }, { buildCylindricalCell, buildParticleFlow }] = await Promise.all([
+      import('three'),
+      import('../three/labScene.js'),
+      import('../three/batteryModel.js')
+    ])
+    // 下载期间用户可能已经切到别的章节，此时 threeBox 已卸载，直接放弃挂载。
+    // 注意这里必须用 return 而不是 if 包住下面 —— 否则迟到的挂载会往已销毁的容器里塞 canvas。
+    if (!threeBox.value || disposed) return
+
     // 首页展台：**开放旋转（可拖动环视）**，但关闭缩放与平移。
     // 旧版的问题是 minDistance 3 + zoomSpeed 1：滚轮一格相机就贴到模型上，
     // 那才是用户说的"一拖动就放的特别大"。所以这里保留视野缩放关闭、只留旋转。
@@ -278,31 +320,6 @@ onMounted(() => {
     loop()
   }
 
-  const canvas = bgCanvas.value
-  ctx = canvas.getContext('2d')
-  fit()
-  window.addEventListener('resize', fit)
-  for (let i = 0; i < 34; i++) {
-    dots.push({
-      x: Math.random() * innerWidth, y: Math.random() * innerHeight,
-      r: 0.5 + Math.random() * 1.2, vy: 0.08 + Math.random() * 0.22,
-      vx: (Math.random() - 0.5) * 0.12, o: 0.06 + Math.random() * 0.13
-    })
-  }
-  const bgLoop = () => {
-    bgRaf = requestAnimationFrame(bgLoop)
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    for (const d of dots) {
-      d.y -= d.vy
-      d.x += d.vx
-      if (d.y < -4) { d.y = canvas.height + 4; d.x = Math.random() * canvas.width }
-      ctx.beginPath()
-      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2)
-      ctx.fillStyle = `rgba(77,168,255,${d.o})`
-      ctx.fill()
-    }
-  }
-  bgLoop()
 })
 
 function onParallax(e) {
@@ -313,6 +330,7 @@ function onParallax(e) {
 }
 
 onBeforeUnmount(() => {
+  disposed = true
   cancelAnimationFrame(raf)
   cancelAnimationFrame(bgRaf)
   clearInterval(tagTimer)

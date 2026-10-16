@@ -1,1 +1,26 @@
+# 依赖与构建缓存一律不入库：它们是可再生的，入库只会让仓库膨胀，
+# 而且工具链（vite 依赖预打包等）每一次触碰都会搅乱工作区 ——
+# node_modules/.vite/deps 曾被一次常规操作改动出 16 个 untracked + 约 50 个 modified 文件。
+node_modules/
+.vite/
 dist-new/
+
+# 本地环境与编辑器
+.env
+.env.local
+.env.*.local
+.DS_Store
+.idea/
+.vscode/
+
+# 日志
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ⚠️ dist/ 是例外，故意保留在库里。
+# 交付物里的「启动离线版.bat」是免安装预览入口：它只用 Node.js 托管 dist/，
+# 不需要 npm install。为了让评委/队友 clone 下来双击就能看，构建产物留在库中
+# （约 1.6 MB，相对 node_modules 的 144 MB 完全可以接受）。
+# 若以后改走 GitHub Releases 或 Pages 分发构建产物，取消下面这行的注释即可。
+# dist/
