@@ -98,6 +98,29 @@ export function buildCylindricalCell({
   }
   g.add(vent)
 
+  // 5.5) 顶盖总成的内部叠片 —— 真实电芯的顶盖不是一块铁片，而是
+  //      「密封圈 → 安全阀片 → PTC 片」一叠薄件压在一起（对照典型结构图右侧那列编号件）。
+  //      分开建模，拆解时才能像结构图那样逐片拉开；合成一块就只剩"挪走"这一个动作。
+  //      PTC 是正温度系数热敏件：温度过高时电阻骤增，相当于一个可自恢复的过流保护。
+  const gasketMat = new THREE.MeshStandardMaterial({ color: 0x2b3a55, roughness: 0.86, metalness: 0.05 })
+  const ventDiscMat = new THREE.MeshStandardMaterial({ color: 0x8d97a6, roughness: 0.44, metalness: 0.72 })
+  const ptcMat = new THREE.MeshStandardMaterial({ color: 0xb0894a, roughness: 0.5, metalness: 0.4 })
+
+  const gasket = tagPart(new THREE.Mesh(new THREE.CylinderGeometry(topR, topR, 0.03, 40, 1, true), gasketMat), 'terminal', '正极端子')
+  gasket.position.y = plateBottom - 0.015
+  gasket.name = 'gasket'
+  g.add(gasket)
+
+  const ventDisc = tagPart(new THREE.Mesh(new THREE.CylinderGeometry(topR * 0.82, topR * 0.82, 0.028, 40), ventDiscMat), 'vent', '安全阀 / 排气结构')
+  ventDisc.position.y = plateBottom - 0.052
+  ventDisc.name = 'ventDisc'
+  g.add(ventDisc)
+
+  const ptcDisc = tagPart(new THREE.Mesh(new THREE.CylinderGeometry(topR * 0.78, topR * 0.78, 0.03, 40), ptcMat), 'terminal', '正极端子')
+  ptcDisc.position.y = plateBottom - 0.09
+  ptcDisc.name = 'ptcDisc'
+  g.add(ptcDisc)
+
   // 6) 负极端面 + 底部环形凹槽（真实电芯底部的一圈压痕）
   const bottom = tagPart(new THREE.Mesh(new THREE.CylinderGeometry(r, r, bottomH, 64), steelDark), 'negativeCap', '负极底盖')
   bottom.position.y = -h / 2 + bottomH / 2

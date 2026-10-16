@@ -308,9 +308,10 @@ function buildModel() {
     rollMesh = roll
     modelGroup.add(roll)
 
-    // 顶盖组：顶盖盘、正极凸台与泄压阀刻痕属于同一个顶盖件，拆解时一起让开。
+    // 顶盖总成：顶盖盘、正极凸台、泄压阀刻痕、密封圈、安全阀片、PTC 片。
+    // 它们先统一挂进一个组便于整体清理，但拆解时**逐件**给位移 —— 见下面的 CAP_STACK。
     capGroupRef = new THREE.Group()
-    for (const nm of ['positiveCap', 'terminal', 'ventMarks']) {
+    for (const nm of ['positiveCap', 'terminal', 'ventMarks', 'gasket', 'ventDisc', 'ptcDisc']) {
       const o = cell.getObjectByName(nm)
       if (o) { cell.remove(o); capGroupRef.add(o) }
     }
@@ -339,12 +340,28 @@ function buildModel() {
     const layer = (obj, off, from, to) => ({
       obj, off: new THREE.Vector3(...off), base: obj.position.clone(), from, to
     })
+    /* 顶盖总成拆成一叠（对照典型结构图右侧那列编号件）。
+       竖向余量是算过的、不是估的：画框半高 2.62 world ÷ 基准缩放 0.6 = 4.37 local，
+       顶盖最高处约 3.25 local，所以最多只能再抬 1.1 local。
+       但纯竖向拉开不够看 —— 每片只能分到 0.22 local ≈ 8 px，肉眼几乎分不出层次。
+       横向余量是竖向的约 5 倍，所以改成"斜着一路让开"：每片抬高 0.22、同时右移 0.6，
+       相邻两片在屏幕上分开约 23 px，层次才真正看得出来。 */
+    const capLift = (name, step) => {
+      const o = capGroupRef.getObjectByName(name)
+      return o ? layer(o, [step * 0.6, step * 0.22, 0], 58, 88) : null
+    }
     teardownParts = [
       layer(wrap, [-5.4, 0.4, 0], 0, 22),
       layer(shellGroup, [-3.0, 0, 0], 22, 42),
-      layer(negCapGroup, [3.0, 0, 0], 42, 58),
-      layer(capGroupRef, [4.4, 0, 0], 58, 72)
-    ]
+      layer(negCapGroup, [4.6, 0, 0], 42, 58),
+      // step 越大越靠外：PTC 片最靠内、原地不动，正极凸台让得最远
+      capLift('ptcDisc', 0),
+      capLift('ventDisc', 1),
+      capLift('ventMarks', 1),
+      capLift('gasket', 2),
+      capLift('positiveCap', 3),
+      capLift('terminal', 4)
+    ].filter(Boolean)
   } else if (shape.value === 'prism') {
     const cell = buildPrismaticCell()
     modelGroup.add(cell)
@@ -392,16 +409,18 @@ const TD_STEPS = [
   { at: 0, label: '整体', caption: '' },
   { at: 22, label: '① 剥掉热缩膜', caption: '最外层是绝缘与标识用的热缩膜，脱掉它才看得见钢壳。' },
   { at: 42, label: '② 剥开镀镍钢壳', caption: '钢壳同时是承压件、密封件，也是电流回路的一部分。' },
-  { at: 58, label: '③ 让开顶盖与安全阀', caption: '顶盖集成正极凸台、泄压阀刻痕与绝缘件。' },
-  { at: 72, label: '④ 取下负极端面', caption: '底盖内接负极极耳，与钢壳等电位。' },
-  { at: 100, label: '⑤ 散开卷芯夹层', caption: '正极—隔膜—负极—隔膜，一层层摊开成夹层。' }
+  { at: 58, label: '③ 取下负极端面', caption: '底盖内接负极极耳，与钢壳等电位。' },
+  { at: 72, label: '④ 抬起顶盖总成', caption: '顶盖不是一块铁片：密封圈、安全阀片、PTC 片与顶盖盘压成一叠。' },
+  { at: 88, label: '⑤ 顶盖摊成一叠', caption: '越靠外抬得越多：顶盖盘与正极凸台在上，往下依次是密封圈、安全阀片、PTC 片。' },
+  { at: 100, label: '⑥ 散开卷芯夹层', caption: '正极—隔膜—负极—隔膜，一层层摊开成夹层。' }
 ]
 const tdPhase = computed(() => [...TD_STEPS].reverse().find((s) => tdPercent.value >= s.at) || TD_STEPS[0])
 
 /* 点击部件 → 自动走到它所在的档位：
-   外部件（膜 / 壳 / 顶盖 / 底盖）是"剥离"，它和它外面的层一起让开；
-   内部件（卷芯 / 极耳）剥到最后一档，并把卷芯散开成夹层。 */
-const PEEL_AT = { wrap: 22, shell: 42, terminal: 58, vent: 58, negativeCap: 72, roll: 100, tabs: 100 }
+   外部件（膜 / 壳 / 底盖）是"剥离"，它和它外面的层一起让开；
+   顶盖类走到 88，让那一叠薄片摊开但不把卷芯也拆了；
+   内部件（卷芯 / 极耳）走到底，整卷散开成夹层。 */
+const PEEL_AT = { wrap: 22, shell: 42, negativeCap: 58, terminal: 88, vent: 88, roll: 100, tabs: 100 }
 
 function peelTo(id) {
   const target = PEEL_AT[id]
@@ -443,7 +462,7 @@ function applyTeardown(p) {
      每层的层序关系反而看不出来，讲不了"叠层顺序"这件事。
      方形与软包没有这套元数据，循环自然跳过。 */
   if (rollMesh) {
-    const e = Math.max(0, Math.min(1, (pc - 72) / 28))
+    const e = Math.max(0, Math.min(1, (pc - 88) / 12))
     const k = e * e * (3 - 2 * e) // smoothstep：起步与收尾都慢，中段快
     for (const o of rollMesh.children) {
       const idx = o.userData.layerIndex
