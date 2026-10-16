@@ -191,12 +191,12 @@ export function createLabScene(container, {
   // 于是手指在舞台上纵向滑动不会滚动页面 —— 手机上舞台占了大半屏，
   // 用户想在画面上翻页，实际一直在转模型（"划不动"）。窄屏改成 'pan-y'：
   // 纵向滑动交还浏览器翻页，横向滑动照旧旋转模型，双指仍可缩放平移。
-  // 桌面用鼠标时不受影响（滚轮与拖拽都不看 touch-action）。
-  const syncTouchAction = () => {
-    const narrow = container.clientWidth > 0 && container.clientWidth < 768
-    renderer.domElement.style.touchAction = narrow ? 'pan-y' : 'none'
-  }
-  syncTouchAction()
+  // ⚠️ 必须是 none，不能按屏幕宽度切成 'pan-y'。
+  // 原先窄屏下写 'pan-y'，本意是"一指控页、双指操作模型"；但 pan-y 会把**竖向**手势
+  // 判给浏览器滚动，画布只拿得到横向分量 —— 表现就是"能左右转、不能上下转"，
+  // 而上下恰恰是看顶盖与底盖必须的那一个自由度。
+  // 页面滚动改由画布以外的区域承担（舞台只有 280—530 px 高，画布之外还有大量内容）。
+  renderer.domElement.style.touchAction = 'none'
 
   let disposed = false
   const onResize = () => {
@@ -206,9 +206,15 @@ export function createLabScene(container, {
     renderer.setPixelRatio(dprOf())
     renderer.setSize(container.clientWidth, container.clientHeight)
     composer?.setSize(container.clientWidth, container.clientHeight)
-    syncTouchAction()
   }
   window.addEventListener('resize', onResize)
+  // window.resize 在进入/退出全屏时并不总会触发，单靠它同步会留下尺寸错位的窗口；
+  // 这里改用 ResizeObserver 直接盯容器，任何尺寸变化（全屏、分栏折叠、旋转屏幕）都能跟上。
+  let ro = null
+  if (typeof ResizeObserver !== 'undefined') {
+    ro = new ResizeObserver(onResize)
+    ro.observe(container)
+  }
 
   function render() {
     if (disposed) return
@@ -225,6 +231,7 @@ export function createLabScene(container, {
   function dispose() {
     disposed = true
     window.removeEventListener('resize', onResize)
+    ro?.disconnect()
     ctrl?.dispose()
     scene.traverse((o) => {
       if (o.geometry) o.geometry.dispose()
