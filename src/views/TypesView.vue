@@ -58,48 +58,29 @@
         </div>
       </div>
 
-      <!-- 部件详情抽屉。手机上选中部件时整个变成底部上滑面板（.is-sheet），
-           因为窄屏里右侧根本没有"旁边"这块地方给抽屉，放文档流下方又得滚动才看得见。 -->
-      <aside class="drawer panel" :class="{ 'is-sheet': !!selected }">
-        <button v-if="selected" class="sheet-close" aria-label="收起详情，返回整体视角" @click="deselect">
-          <IconGlyph name="down" :size="16" /> 收起详情
-        </button>
-        <div class="drawer-head">
-          <p class="idle-title">数字展柜</p>
-          <p class="idle-line">点电芯上的发光标记，或点下面的条目。</p>
-        </div>
-
-        <transition name="fade-slide" mode="out-in">
-          <div v-if="selected" :key="selected" class="part-card">
+      <!-- 部件介绍不再占用右侧目录栏：直接以浮层形式压在舞台黑底上，
+           由一条引导线连到电芯上那个发光标记 —— 就是典型结构图里的引线标注做法。
+           好处是介绍和部件在同一个视野里，全屏时也不会被挡在全屏元素之外。
+           卡内自带「上一处 / 下一处」，所以去掉清单也不会失去键盘可达性。 -->
+      <transition name="fade-slide">
+        <aside v-if="selected" class="part-float" :style="floatStyle" role="dialog" aria-label="部件介绍">
+          <div class="pf-head">
             <h4>{{ curPart.label }}</h4>
-            <dl>
-              <dt>它是什么</dt><dd>{{ curPart.what }}</dd>
-              <dt>它在哪里</dt><dd>{{ curPart.where }}</dd>
-              <dt>它做什么</dt><dd>{{ curPart.func }}</dd>
-              <dt>失效会怎样</dt><dd>{{ curPart.fail }}</dd>
-            </dl>
-            <p class="oneline">记住：{{ curPart.oneline }}</p>
+            <div class="pf-nav">
+              <button type="button" class="pf-btn" aria-label="上一个部件" @click="stepPart(-1)">‹</button>
+              <button type="button" class="pf-btn" aria-label="下一个部件" @click="stepPart(1)">›</button>
+              <button type="button" class="pf-btn" aria-label="关闭部件介绍" @click="deselect">✕</button>
+            </div>
           </div>
-        </transition>
-
-        <!-- 热点清单：每一项都是真按钮，与电芯上的发光标记共用同一个 onSelect，
-             两个入口完全等价。此前这里只是没有 @click 的 <li> 文字标签，
-             而电芯上的标记又只能靠射线打精灵方片 —— 结果两边都点不动。 -->
-        <ul class="idle-parts">
-          <li v-for="h in curHotspots" :key="h.partId">
-            <button
-              type="button"
-              class="hp-btn"
-              :class="{ on: selected === h.partId }"
-              :aria-pressed="selected === h.partId"
-              @click="onSelect(h.partId)"
-            >
-              <span class="hdot" :style="{ background: curShape.color }" aria-hidden="true"></span>
-              {{ h.label }}
-            </button>
-          </li>
-        </ul>
-      </aside>
+          <dl>
+            <dt>它是什么</dt><dd>{{ curPart.what }}</dd>
+            <dt>它在哪里</dt><dd>{{ curPart.where }}</dd>
+            <dt>它做什么</dt><dd>{{ curPart.func }}</dd>
+            <dt>失效会怎样</dt><dd>{{ curPart.fail }}</dd>
+          </dl>
+          <p class="pf-oneline">{{ curPart.oneline }}</p>
+        </aside>
+      </transition>
     </div>
 
     <!-- 化学体系对比 -->
@@ -643,8 +624,13 @@ function onFsChange() {
   requestAnimationFrame(() => window.dispatchEvent(new Event('resize')))
 }
 
-/* 引导线：部件 → 右侧抽屉 */
+/* 引导线 + 浮层定位：部件 → 舞台黑底上的介绍卡。
+   不再连向右侧目录栏（那一栏已按反馈移除）。 */
 const guideV = new THREE.Vector3()
+const FLOAT_W = 300 // 介绍卡宽度（px）：定位与连线端点共用
+const floatStyle = ref({})
+const lastFloat = { x: -1, y: -1 }
+
 function updateGuide() {
   if (!selected.value || !scene || !guideSvg.value) return
   const hs = curHotspots.value.find((h) => h.partId === selected.value)
@@ -655,11 +641,35 @@ function updateGuide() {
   const rect = threeBox.value.getBoundingClientRect()
   const x = (guideV.x * 0.5 + 0.5) * rect.width
   const y = (-guideV.y * 0.5 + 0.5) * rect.height
+
+  // 光点在左半屏就把卡放右边，反之放左边 —— 保证卡不压住电芯本体
+  const onLeft = x < rect.width * 0.5
+  const cardX = onLeft ? Math.max(20, rect.width - FLOAT_W - 24) : 24
+  const cardY = Math.min(Math.max(y - 46, 16), Math.max(16, rect.height - 250))
+
+  // 逐帧写 style 会白触发一轮响应式更新；位置没变就不写
+  if (cardX !== lastFloat.x || cardY !== lastFloat.y) {
+    lastFloat.x = cardX
+    lastFloat.y = cardY
+    floatStyle.value = { left: `${cardX}px`, top: `${cardY}px`, width: `${FLOAT_W}px` }
+  }
+
   const line = guideSvg.value.querySelector('.guide-line')
   const dot = guideSvg.value.querySelector('.guide-dot')
   line.setAttribute('x1', x); line.setAttribute('y1', y)
-  line.setAttribute('x2', rect.width - 6); line.setAttribute('y2', rect.height * 0.4)
+  // 终点落在卡片靠电芯的那条边上
+  line.setAttribute('x2', onLeft ? cardX : cardX + FLOAT_W)
+  line.setAttribute('y2', cardY + 24)
   dot.setAttribute('cx', x); dot.setAttribute('cy', y)
+}
+
+/* 卡内翻页：去掉清单后靠它遍历全部部件，键盘也能用 */
+function stepPart(dir) {
+  const list = curHotspots.value
+  if (!list.length) return
+  const i = list.findIndex((h) => h.partId === selected.value)
+  const base = i < 0 ? 0 : i
+  onSelect(list[((base + dir) % list.length + list.length) % list.length].partId)
 }
 
 /* ── 雷达图（正五边形 · 1-5 档 · 可叠加对比） ── */
@@ -779,7 +789,7 @@ onBeforeUnmount(() => {
 .head { position: relative;
   .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
 }
-.showcase { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; align-items: start; }
+.showcase { display: block; }
 .stage-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .stage { position: relative; height: var(--stage-h); overflow: hidden; min-width: 0; }
 /* 全屏：整个展柜（左边舞台 + 右边抽屉）一起铺满视口。
@@ -794,15 +804,13 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   .stage-col { height: 100%; min-height: 0; }
   .stage { flex: 1 1 auto; min-height: 0; border-radius: 12px; }
-  /* 抽屉跟着撑满：全屏里介绍卡要在，而且要够高才看得完五条词条 */
-  .drawer { height: auto; max-height: 100%; }
   /* 四角控件留出内边距，别贴着屏幕边 */
   .shape-row { left: 24px; bottom: 24px; }
   .stage-tools { right: 24px; top: 20px; }
 }
 @media (max-width: 767px) {
-  /* 窄屏全屏：单列，抽屉仍走 .is-sheet 的底部上滑面板 */
-  .showcase:fullscreen { grid-template-columns: minmax(0, 1fr); padding: 10px; }
+  /* 窄屏全屏：舞台独占，介绍浮层已在 .part-float 的窄屏规则里改成贴底 */
+  .showcase:fullscreen { padding: 10px; }
 }
 .three-box { position: absolute; inset: 0; cursor: grab; }
 .guide-svg { position: absolute; inset: 0; pointer-events: none; z-index: 5;
@@ -834,33 +842,51 @@ onBeforeUnmount(() => {
   .td-caption { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 .back-btn { position: absolute; right: 16px; bottom: 16px; z-index: 4; }
-// 只在手机上出现的"收起详情"按钮（配合底部上滑面板），桌面隐藏
-.sheet-close { display: none; }
 
-.drawer { padding: 18px 20px; height: var(--stage-h); display: flex; flex-direction: column; overflow-y: auto; }
-.drawer-head {
-  .idle-title { font-size: 13px; letter-spacing: 0.2em; color: var(--blue); margin-bottom: 8px; }
-  .idle-line { font-size: 13.5px; color: var(--text-2); line-height: 1.7; }
-}
-.idle-parts {
-  display: flex; flex-direction: column; gap: 7px; margin-top: 16px;
-  li { display: flex; }
-  .hp-btn {
-    display: flex; align-items: center; gap: 10px; width: 100%;
-    padding: 8px 12px; border: 1px dashed var(--hairline); border-radius: 8px;
-    background: transparent; color: var(--text-2); font: inherit; font-size: 13px;
-    text-align: left; cursor: pointer; transition: all 0.2s ease;
-    &:hover { color: var(--text-1); border-color: var(--hairline-strong); background: rgba(77, 168, 255, 0.08); }
-    &.on { color: #eaf6ff; border-style: solid; border-color: rgba(77, 168, 255, 0.6); background: rgba(77, 168, 255, 0.14); }
-    .hdot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+/* ── 部件介绍浮层 ──
+   压在舞台黑底上，由引导线连到电芯上的发光标记（典型结构图的引线标注做法）。
+   取代了原来的右侧目录栏：介绍与部件在同一个视野里，全屏也不会被挡在全屏元素之外。
+   位置由 updateGuide() 每帧按热点投影算，逐帧只在变化时写 style。 */
+.part-float {
+  position: absolute; z-index: 6;
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 12px;
+  /* 半透明深底 + 毛玻璃：既压得住黑背景，又不会把后面的电芯完全糊掉 */
+  background: rgba(10, 15, 28, 0.82);
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+  .pf-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  h4 { flex: 1; font-size: 15.5px; color: var(--cyan); line-height: 1.4; }
+  .pf-nav { display: flex; gap: 4px; flex: 0 0 auto; }
+  .pf-btn {
+    width: 26px; height: 26px; display: grid; place-items: center;
+    border: 1px solid var(--hairline); border-radius: 7px;
+    background: rgba(77, 168, 255, 0.07); color: var(--text-2);
+    font: inherit; font-size: 14px; line-height: 1; cursor: pointer;
+    transition: all 0.18s ease;
+    &:hover { color: #eaf6ff; border-color: var(--hairline-strong); background: rgba(77, 168, 255, 0.18); }
+  }
+  dl { display: grid; grid-template-columns: 64px 1fr; gap: 9px 10px;
+    dt { font-size: 11.5px; color: var(--blue); padding-top: 2px; }
+    dd { font-size: 12.5px; color: var(--text-1); line-height: 1.7; } }
+  .pf-oneline {
+    margin-top: 12px; padding: 8px 11px;
+    background: rgba(34, 211, 238, 0.07); border-left: 3px solid var(--cyan); border-radius: 6px;
+    font-size: 12px; color: #bfe9ff; line-height: 1.65;
   }
 }
-.part-card {
-  h4 { font-size: 17px; color: var(--cyan); margin-bottom: 14px; }
-  dl { display: grid; grid-template-columns: 82px 1fr; gap: 12px 10px;
-    dt { font-size: 12px; color: var(--blue); padding-top: 2px; }
-    dd { font-size: 13.5px; color: var(--text-1); line-height: 1.75; } }
-  .oneline { margin-top: 16px; padding: 10px 14px; background: rgba(34,211,238,0.07); border-left: 3px solid var(--cyan); border-radius: 6px; font-size: 13px; color: #bfe9ff; line-height: 1.7; }
+@media (max-width: 767px) {
+  /* 窄屏舞台只有 280—380 px，浮层改成铺在底部、不再跟着热点跑 */
+  .part-float {
+    left: 10px !important; right: 10px; top: auto !important; bottom: 10px;
+    width: auto !important; max-height: 62%;
+    .pf-btn { width: 34px; height: 34px; }
+  }
 }
 
 .chem { padding: 22px; }
@@ -883,9 +909,8 @@ onBeforeUnmount(() => {
 
 /* 平板 / 窄笔记本：双栏塌成单栏。舞台仍是"画布铺满 + 浮层绝对定位"的桌面思路 */
 @media (max-width: 1080px) {
-  .showcase, .chem-body { grid-template-columns: minmax(0, 1fr); }
+  .chem-body { grid-template-columns: minmax(0, 1fr); }
   .stage { height: clamp(340px, 56vh, 440px); }
-  .drawer { height: auto; min-height: 0; overflow: visible; }
   .view-hint { display: none; }
 }
 
@@ -903,10 +928,8 @@ onBeforeUnmount(() => {
     height: var(--stage-h);
     border-radius: 12px; overflow: hidden;
   }
-  /* 引导线是"部件 → 右侧抽屉"的连接线。手机上抽屉已挪到底部上滑面板，
-     连接目标不存在了，留着只会横穿画面。而且它的坐标按舞台像素算，
-     舞台改成 flex 后也不再对得上。 */
-  .guide-svg { display: none; }
+  /* 引导线现在连的是舞台内的介绍浮层，不再是"右侧抽屉" ——
+     手机上同样成立，所以不再隐藏（.guide-svg 已删掉原来的 display:none）。 */
 
   .stage-tools {
     position: static; order: 2; width: 100%;
@@ -923,28 +946,8 @@ onBeforeUnmount(() => {
     position: static; order: 3; width: 100%;
     .btn-ghost { flex: 1; min-height: 46px; font-size: 13px; }
   }
-  /* 桌面那个角落里的"返回整体"由面板自带的"收起详情"取代 */
+  /* 桌面那个角落里的"返回整体"在手机上由浮层自带的「✕」取代 */
   .back-btn { display: none; }
-
-  /* 抽屉 → 底部上滑面板（仅选中部件时） */
-  .drawer { padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
-  .drawer.is-sheet {
-    position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 160;
-    max-height: 58vh; overflow-y: auto;
-    border-radius: 18px;
-    box-shadow: 0 -12px 44px rgba(0, 0, 0, 0.6);
-    animation: types-sheet-up 0.3s cubic-bezier(0.2, 0.7, 0.3, 1);
-  }
-  .sheet-close {
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    width: 100%; min-height: 44px; margin-bottom: 12px;
-    border: 1px solid var(--hairline); border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer;
-  }
-
-  /* 热点条目在手机上也要撑到 44px 触摸目标 */
-  .idle-parts .hp-btn { min-height: 44px; }
 
   .teardown {
     .icon { width: 44px; height: 44px; }
