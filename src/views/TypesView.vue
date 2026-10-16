@@ -27,6 +27,9 @@
           <!-- 参照尺寸 + 视角操作 -->
           <div class="stage-tools">
             <div class="size-tag num">{{ curShape.size }}</div>
+            <button class="btn-ghost view-reset" :class="{ active: panMode }" :title="panMode ? '切回旋转模式' : '切到平移模式：左键拖拽上下左右移动模型'" @click="togglePan">
+              {{ panMode ? '平移模式' : '旋转模式' }}
+            </button>
             <button class="btn-ghost view-reset" title="恢复到初始角度与距离" @click="resetView">
               <IconGlyph name="reset" /> 重置视角
             </button>
@@ -628,6 +631,19 @@ function onClick(e) {
 
 /* 重置视角：放开缩放/平移后，用户很容易把自己"转丢"（模型跑出画面或贴到脸上），
    必须留一个一键回正的退路。 */
+/* 拖拽模式：OrbitControls 默认「左键旋转 / 中键缩放 / 右键平移」，
+   所以"上下平移"本来要用右键 —— 反馈里想用左键直接上下拖。
+   这里给一个显式开关，把左键在 ROTATE / PAN 之间切换，不动中键与右键映射：
+   平移模式下左键拖 = 平移（上下左右都能移动模型），右键仍是平移，旋转则需切回。 */
+const panMode = ref(false)
+
+function togglePan() {
+  const c = scene && scene.controls
+  if (!c) return
+  panMode.value = !panMode.value
+  c.mouseButtons.LEFT = panMode.value ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE
+}
+
 function resetView() {
   if (!scene) return
   if (selected.value) { deselect(); return }  // deselect 里已含回正
