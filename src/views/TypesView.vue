@@ -59,17 +59,13 @@
         <button v-if="selected" class="sheet-close" aria-label="收起详情，返回整体视角" @click="deselect">
           <IconGlyph name="down" :size="16" /> 收起详情
         </button>
+        <div class="drawer-head">
+          <p class="idle-title">数字展柜</p>
+          <p class="idle-line">点电芯上的发光标记，或点下面的条目。</p>
+        </div>
+
         <transition name="fade-slide" mode="out-in">
-          <div v-if="!selected" key="idle" class="drawer-idle">
-            <p class="idle-title">数字展柜</p>
-            <p class="idle-line">旋转观察，点击发光标记认识部件。</p>
-            <ul class="idle-parts">
-              <li v-for="h in curHotspots" :key="h.partId">
-                <span class="hdot" :style="{ background: curShape.color }"></span>{{ h.label }}
-              </li>
-            </ul>
-          </div>
-          <div v-else :key="selected" class="part-card">
+          <div v-if="selected" :key="selected" class="part-card">
             <h4>{{ curPart.label }}</h4>
             <dl>
               <dt>它是什么</dt><dd>{{ curPart.what }}</dd>
@@ -80,6 +76,24 @@
             <p class="oneline">记住：{{ curPart.oneline }}</p>
           </div>
         </transition>
+
+        <!-- 热点清单：每一项都是真按钮，与电芯上的发光标记共用同一个 onSelect，
+             两个入口完全等价。此前这里只是没有 @click 的 <li> 文字标签，
+             而电芯上的标记又只能靠射线打精灵方片 —— 结果两边都点不动。 -->
+        <ul class="idle-parts">
+          <li v-for="h in curHotspots" :key="h.partId">
+            <button
+              type="button"
+              class="hp-btn"
+              :class="{ on: selected === h.partId }"
+              :aria-pressed="selected === h.partId"
+              @click="onSelect(h.partId)"
+            >
+              <span class="hdot" :style="{ background: curShape.color }" aria-hidden="true"></span>
+              {{ h.label }}
+            </button>
+          </li>
+        </ul>
       </aside>
     </div>
 
@@ -402,14 +416,45 @@ const raycaster = new THREE.Raycaster()
 const pointer = new THREE.Vector2()
 let hovered = null
 
+/* 发光标记的命中半径（CSS 像素）。
+   原来这里是用 raycast 打精灵方片（hotspotSprites）：精灵处在 modelGroup 的 0.6 缩放里，
+   只有 0.5 × 0.6 = 0.3 世界单位（屏幕上约 20px），必须精准落进方片才算命中。
+   "看得见一个光点却点不中"是最劝退的交互，实测反馈也正是"点电池上的光点没有用"。
+   改成屏幕空间就近判定：把锚点按 updateGuide 同一套投影算成像素坐标，取半径内最近的热点。
+   所见即所点，且不再依赖精灵自身的拾取实现。 */
+const HOTSPOT_HIT_R = 24
+
+const pickV = new THREE.Vector3()
+function nearestHotspot(px, py, rect) {
+  let best = null
+  let bestD = HOTSPOT_HIT_R * HOTSPOT_HIT_R
+  for (const hs of curHotspots.value) {
+    pickV.set(...hs.anchor)
+    modelGroup.localToWorld(pickV)
+    pickV.project(scene.camera)
+    if (pickV.z > 1) continue // 在远平面之外（模型始终在镜头前，这里只是兜底）
+    const sx = (pickV.x * 0.5 + 0.5) * rect.width
+    const sy = (-pickV.y * 0.5 + 0.5) * rect.height
+    const d = (sx - px) * (sx - px) + (sy - py) * (sy - py)
+    if (d < bestD) { bestD = d; best = hs }
+  }
+  return best
+}
+
 function pickAt(e) {
   if (!scene || !modelGroup) return null
   const rect = threeBox.value.getBoundingClientRect()
-  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1
-  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1
+  const px = e.clientX - rect.left
+  const py = e.clientY - rect.top
+
+  // ① 先判发光标记：离哪个近就算哪个
+  const hs = nearestHotspot(px, py, rect)
+  if (hs) return { partId: hs.partId }
+
+  // ② 再判模型本体：直接点壳身 / 端盖也能认识这个部件
+  pointer.x = (px / rect.width) * 2 - 1
+  pointer.y = -(py / rect.height) * 2 + 1
   raycaster.setFromCamera(pointer, scene.camera)
-  const sprHits = raycaster.intersectObjects(hotspotSprites, false)
-  if (sprHits.length) return { partId: sprHits[0].object.userData.hs.partId }
   const meshes = []
   modelGroup.traverse((o) => { if (o.isMesh && o.userData.partId) meshes.push(o) })
   const hits = raycaster.intersectObjects(meshes, false)
@@ -424,7 +469,9 @@ function onPointerMove(e) {
   threeBox.value.style.cursor = hovered ? 'pointer' : 'grab'
   hotspotSprites.forEach((s) => {
     const on = hovered && s.userData.hs.partId === hovered
-    gsap.to(s.scale, { x: on ? 0.5 : 0.34, y: on ? 0.5 : 0.34, duration: 0.25 })
+    // 基准是 0.5（见 makeHotspotSprite）。这里原先还写着基准缩放 0.88 时代的 0.34，
+    // 结果是"一碰鼠标所有光点先缩小一圈"，hover 反而比静止还小。
+    gsap.to(s.scale, { x: on ? 0.68 : 0.5, y: on ? 0.68 : 0.5, duration: 0.25 })
   })
 }
 
@@ -660,13 +707,22 @@ onBeforeUnmount(() => {
 .sheet-close { display: none; }
 
 .drawer { padding: 18px 20px; height: var(--stage-h); display: flex; flex-direction: column; overflow-y: auto; }
-.drawer-idle {
-  flex: 1; display: flex; flex-direction: column; justify-content: center;
-  .idle-title { font-size: 13px; letter-spacing: 0.2em; color: var(--blue); margin-bottom: 10px; }
-  .idle-line { font-size: 15.5px; color: var(--text-1); line-height: 1.8; margin-bottom: 18px; }
-  .idle-parts { display: flex; flex-direction: column; gap: 11px;
-    li { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-2); padding: 8px 12px; border: 1px dashed var(--hairline); border-radius: 8px;
-      .hdot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; } } }
+.drawer-head {
+  .idle-title { font-size: 13px; letter-spacing: 0.2em; color: var(--blue); margin-bottom: 8px; }
+  .idle-line { font-size: 13.5px; color: var(--text-2); line-height: 1.7; }
+}
+.idle-parts {
+  display: flex; flex-direction: column; gap: 7px; margin-top: 16px;
+  li { display: flex; }
+  .hp-btn {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 8px 12px; border: 1px dashed var(--hairline); border-radius: 8px;
+    background: transparent; color: var(--text-2); font: inherit; font-size: 13px;
+    text-align: left; cursor: pointer; transition: all 0.2s ease;
+    &:hover { color: var(--text-1); border-color: var(--hairline-strong); background: rgba(77, 168, 255, 0.08); }
+    &.on { color: #eaf6ff; border-style: solid; border-color: rgba(77, 168, 255, 0.6); background: rgba(77, 168, 255, 0.14); }
+    .hdot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+  }
 }
 .part-card {
   h4 { font-size: 17px; color: var(--cyan); margin-bottom: 14px; }
@@ -755,6 +811,9 @@ onBeforeUnmount(() => {
     background: rgba(255, 255, 255, 0.04);
     color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer;
   }
+
+  /* 热点条目在手机上也要撑到 44px 触摸目标 */
+  .idle-parts .hp-btn { min-height: 44px; }
 
   .teardown {
     .icon { width: 44px; height: 44px; }
