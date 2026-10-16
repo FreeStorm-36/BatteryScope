@@ -30,6 +30,11 @@
             <button class="btn-ghost view-reset" title="恢复到初始角度与距离" @click="resetView">
               <IconGlyph name="reset" /> 重置视角
             </button>
+            <!-- 全屏观察：竖向拆解需要纵向空间，而普通版式的舞台高只有 315 px 左右。
+                 全屏后画布高度翻数倍，同样的世界尺寸能拿到 3 倍以上的像素。 -->
+            <button class="btn-ghost view-reset" :title="fsOn ? '退出全屏（Esc）' : '全屏观察拆解'" @click="toggleFullscreen">
+              {{ fsOn ? '退出全屏' : '全屏观察' }}
+            </button>
             <p class="view-hint">
               <span class="vh-mouse">拖拽旋转 · 滚轮缩放 · 右键平移</span>
               <span class="vh-touch">单指旋转 · 双指缩放与平移</span>
@@ -241,6 +246,8 @@ let hotspotSprites = []
 let dimmables = []       // { mesh, mat }
 let teardownParts = []   // { obj, basePos, off, fadeTo, phase, ... }
 let rollMesh = null, capGroupRef = null, stackRef = null
+// 拆解到位的目标缩放。圆柱走竖向排布，靠它把纵向空间腾出来；方形/软包保持 0.6 不变。
+let tdScaleTo = 0.6
 
 function disposeModel() {
   if (!modelGroup) return
@@ -286,6 +293,7 @@ function makeHotspotSprite() {
 function buildModel() {
   disposeModel()
   modelGroup = new THREE.Group()
+  tdScaleTo = 0.6 // 默认不缩；圆柱分支按竖向排布需要改小
   // 基准缩放：模型本身已是真实尺寸（26650 高 6.5 unit），这里只把整体观感缩到画框内
   modelGroup.scale.setScalar(0.6)
 
@@ -331,30 +339,24 @@ function buildModel() {
     const shellGroup = regroup(['shellBody', 'shoulder'])
     const negCapGroup = regroup(['negativeCap', 'bottomGroove'])
 
-    /* 剥离层序：由外到内。点击某个部件时，从最外层一路剥到它所在的那一层 ——
-       这就是"剥洋葱"的读法：点钢壳会先脱掉标签、再让开钢壳本身。
-       位移一律走"往侧面让开"，而不是上下抬：模型基准缩放 0.6、相机距离 7.2 / fov 40 下，
-       画框垂直只容得下约 5.24 世界单位，而模型自身就高 3.9 —— 上下几乎没有余量，
-       早期版本把标签往上抬 2.4 单位（= 1.44 世界单位）其实已经出画了。
-       横向余量宽得多，所以外层往左让、端盖往右让，互不遮挡。 */
+    /* 竖向排布（按反馈把侧向改掉）：顶盖总成一叠向上、卷芯居中、钢壳/热缩膜/负极端面依次向下。
+       竖向空间本来很紧，所以配合两件事补回来：
+       ① 舞台提供「全屏观察」入口，画布高度翻数倍；
+       ② 拆解推进时把整组从 0.60 缩到 0.37 —— 不缩的话，光是把热缩膜往下降到 -4.2 local
+          就会顶出画框（画框半高 2.62 world ÷ 0.60 = 4.37 local，而膜本身高 6.0）。
+       实测：0.37 时画框半高约 7.1 local，最大行程 7.0，刚好留一点余量。 */
     const layer = (obj, off, from, to) => ({
       obj, off: new THREE.Vector3(...off), base: obj.position.clone(), from, to
     })
-    /* 顶盖总成拆成一叠（对照典型结构图右侧那列编号件）。
-       竖向余量是算过的、不是估的：画框半高 2.62 world ÷ 基准缩放 0.6 = 4.37 local，
-       顶盖最高处约 3.25 local，所以最多只能再抬 1.1 local。
-       但纯竖向拉开不够看 —— 每片只能分到 0.22 local ≈ 8 px，肉眼几乎分不出层次。
-       横向余量是竖向的约 5 倍，所以改成"斜着一路让开"：每片抬高 0.22、同时右移 0.6，
-       相邻两片在屏幕上分开约 23 px，层次才真正看得出来。 */
     const capLift = (name, step) => {
       const o = capGroupRef.getObjectByName(name)
-      return o ? layer(o, [step * 0.6, step * 0.22, 0], 58, 88) : null
+      return o ? layer(o, [0, step * 0.5, 0], 58, 88) : null
     }
     teardownParts = [
-      layer(wrap, [-5.4, 0.4, 0], 0, 22),
-      layer(shellGroup, [-3.0, 0, 0], 22, 42),
-      layer(negCapGroup, [4.6, 0, 0], 42, 58),
-      // step 越大越靠外：PTC 片最靠内、原地不动，正极凸台让得最远
+      layer(wrap, [0, -4.2, 0], 0, 22),
+      layer(shellGroup, [0, -2.6, 0], 22, 42),
+      layer(negCapGroup, [0, -6.0, 0], 42, 58),
+      // 纯竖向：PTC 片最靠内原地不动，越靠外的抬得越高，一叠薄片竖着拉成阶梯
       capLift('ptcDisc', 0),
       capLift('ventDisc', 1),
       capLift('ventMarks', 1),
@@ -362,6 +364,7 @@ function buildModel() {
       capLift('positiveCap', 3),
       capLift('terminal', 4)
     ].filter(Boolean)
+    tdScaleTo = 0.37
   } else if (shape.value === 'prism') {
     const cell = buildPrismaticCell()
     modelGroup.add(cell)
@@ -411,7 +414,7 @@ const TD_STEPS = [
   { at: 42, label: '② 剥开镀镍钢壳', caption: '钢壳同时是承压件、密封件，也是电流回路的一部分。' },
   { at: 58, label: '③ 取下负极端面', caption: '底盖内接负极极耳，与钢壳等电位。' },
   { at: 72, label: '④ 抬起顶盖总成', caption: '顶盖不是一块铁片：密封圈、安全阀片、PTC 片与顶盖盘压成一叠。' },
-  { at: 88, label: '⑤ 顶盖摊成一叠', caption: '越靠外抬得越多：顶盖盘与正极凸台在上，往下依次是密封圈、安全阀片、PTC 片。' },
+  { at: 88, label: '⑤ 顶盖向上摊成一叠', caption: '越靠外抬得越高：正极凸台与顶盖盘在上，往下依次是密封圈、安全阀片、PTC 片。' },
   { at: 100, label: '⑥ 散开卷芯夹层', caption: '正极—隔膜—负极—隔膜，一层层摊开成夹层。' }
 ]
 const tdPhase = computed(() => [...TD_STEPS].reverse().find((s) => tdPercent.value >= s.at) || TD_STEPS[0])
@@ -432,6 +435,12 @@ function peelTo(id) {
 
 function applyTeardown(p) {
   const pc = p * 100
+  // 整组缩放由这里统一负责（原先入场动画也在写 scale，两边会互相覆盖）：
+  // 竖向拆解需要纵向空间，从剥膜之后开始把整组缩到 tdScaleTo。
+  if (modelGroup) {
+    const sk = Math.max(0, Math.min(1, (pc - 22) / 78))
+    modelGroup.scale.setScalar(0.6 + (tdScaleTo - 0.6) * sk)
+  }
   for (const tp of teardownParts) {
     if (!tp.obj) continue
     // 圆柱用显式区间（from/to），方形与软包仍沿用四等分的 phase —— 两者语义等价，兼容并存
@@ -474,14 +483,10 @@ function applyTeardown(p) {
 function resetTeardown() { tdPercent.value = 0; tdPlaying.value = false }
 watch(tdPercent, (v) => applyTeardown(v / 100))
 function switchShape(k) { if (k !== shape.value) shape.value = k }
-// 形态切换 → 重建 3D 模型（重建后入场缩放动画 + 复位拆解进度）
+// 形态切换 → 重建 3D 模型（缩放由 applyTeardown 统一管理，这里不再另做入场补间）
 watch(shape, () => {
   resetTeardown()
   buildModel()
-  if (modelGroup) {
-    modelGroup.scale.setScalar(0.5)
-    gsap.to(modelGroup.scale, { x: 0.6, y: 0.6, z: 0.6, duration: 0.7, ease: 'power2.out' })
-  }
 })
 
 /* ── 热点拾取 / 聚焦 / 高亮 ── */
@@ -613,6 +618,27 @@ function resetView() {
   fly.flyTo(HOME_POS, HOME_TARGET, 0.6)
 }
 
+/* ── 全屏观察 ──
+   竖向拆解要的是纵向空间，而普通版式下舞台高度只有 315 px 上下，给不出来。
+   全屏作用在 .stage 上，画布尺寸随之变化，labScene 里的 resize 会自己跟上。 */
+const fsOn = ref(false)
+
+async function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) await stageBox.value?.requestFullscreen()
+    else await document.exitFullscreen()
+  } catch {
+    // 用户拒绝、或浏览器/内嵌框架不允许全屏：静默降级，不影响其它功能
+  }
+}
+
+function onFsChange() {
+  fsOn.value = !!document.fullscreenElement
+  // fullscreenchange 不一定伴随 window resize，补发一次让 canvas 重新量尺寸，
+  // 否则画布还按旧尺寸渲染，全屏里会糊成一片。
+  requestAnimationFrame(() => window.dispatchEvent(new Event('resize')))
+}
+
 /* 引导线：部件 → 右侧抽屉 */
 const guideV = new THREE.Vector3()
 function updateGuide() {
@@ -709,6 +735,7 @@ onMounted(async () => {
   radar.setOption(radarOption())
   onResize = () => { radar?.resize() }
   window.addEventListener('resize', onResize)
+  document.addEventListener('fullscreenchange', onFsChange)
 
   const loop = () => {
     raf = requestAnimationFrame(loop)
@@ -732,6 +759,7 @@ onBeforeUnmount(() => {
   threeBox.value?.removeEventListener('pointermove', onPointerMove)
   threeBox.value?.removeEventListener('click', onClick)
   window.removeEventListener('resize', onResize)
+  document.removeEventListener('fullscreenchange', onFsChange)
   radar?.dispose()
   disposeModel()
   if (scene) scene.dispose()
@@ -750,6 +778,16 @@ onBeforeUnmount(() => {
 .showcase { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; align-items: start; }
 .stage-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .stage { position: relative; height: var(--stage-h); overflow: hidden; min-width: 0; }
+/* 全屏：舞台铺满视口，画布随之变高，竖向拆解才有地方展开。
+   --stage-h 在正常版式下只有 360—530 px，全屏后要覆盖掉。 */
+.stage:fullscreen {
+  height: 100vh; width: 100vw;
+  border: 0; border-radius: 0;
+  background: #070b14;
+  /* 全屏里四角控件保持可见：换外形、重置视角、退出全屏都还要能点 */
+  .shape-row { left: 24px; bottom: 24px; }
+  .stage-tools { right: 24px; top: 20px; }
+}
 .three-box { position: absolute; inset: 0; cursor: grab; }
 .guide-svg { position: absolute; inset: 0; pointer-events: none; z-index: 5;
   // ⚠️ width/height 必须有。<svg> 是替换元素，给 position:absolute + inset:0 并不会
