@@ -23,8 +23,8 @@
               <rect class="gv-sei" x="88" y="36" width="9" height="60" rx="3" fill="#b45309" opacity=".92" />
               <rect x="98" y="18" width="64" height="8" rx="4" fill="rgba(77,168,255,.15)" />
               <rect class="gv-inv" x="98" y="18" width="53" height="8" rx="4" fill="#34d399" />
-              <!-- 中性结构标签（不剧透答案） -->
-              <text x="26" y="24" class="gv-tag dim">可循环锂库存</text>
+              <!-- 中性结构标签（不剧透答案）：库存标签紧贴指示条，含义自明 -->
+              <text x="94" y="24.5" class="gv-tag dim" text-anchor="end">可循环锂库存</text>
               <text x="26" y="112" class="gv-tag dim">正极</text>
               <text x="84" y="112" class="gv-tag dim">负极</text>
               <!-- 答题后出现：机制标注 + 引导线 + 形貌脉冲 -->
@@ -250,7 +250,12 @@ const doneLine = computed(() => {
 .gv-reveal.on .gv-flash { animation: gv-flash 1.1s ease 0.4s 2; }
 @keyframes gv-flash { 0%, 100% { opacity: 0; } 50% { opacity: 0.85; } }
 
-/* SEI：膜呼吸式增厚 + 锂库存同步下降 */
+/* SVG 的 CSS transform-origin 默认相对 viewBox 原点而非元素自身，
+   不加 transform-box: fill-box 会导致 scaleX 元素"平移"甚至滑出画面。
+   所有按自身缩放/位移的元素必须带上 fill-box。 */
+.gv-sei, .gv-inv, .gv-needle, .gv-liquid, .gv-cell, .gv-dead { transform-box: fill-box; }
+
+/* SEI：膜呼吸式增厚（原地向右长厚，不滑动）+ 锂库存同步变短 */
 .gv-sei { transform-origin: left center; animation: gv-sei 2.8s ease-in-out infinite; }
 @keyframes gv-sei { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(2); } }
 .gv-inv { transform-origin: left center; animation: gv-inv 2.8s ease-in-out infinite; }
