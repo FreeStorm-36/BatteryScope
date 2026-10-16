@@ -135,7 +135,7 @@ import DataBadge from '../components/DataBadge.vue'
 import IconGlyph from '../components/IconGlyph.vue'
 
 /* ── 基础状态 ── */
-const shape = ref('21700')
+const shape = ref('26650')
 const curShape = computed(() => batteryShapes.find((s) => s.key === shape.value))
 const selected = ref(null)          // 选中部件 partId
 const chem = ref('LFP')
@@ -171,7 +171,9 @@ const PART_INFO = {
 /* ── 每个外形的热点（锚点为模型局部坐标） ── */
 const HOTSPOTS = {
   // 锚点按真实尺寸模型（1 unit = 10 mm）标定：
-  // 18650 = Φ18×65 → r 0.90 / h 6.50；21700 = Φ21×70 → r 1.05 / h 7.00
+  // 18650 = Φ18×65 → r 0.90 / h 6.50；21700 = Φ21×70 → r 1.05 / h 7.00；
+  // 26650 = Φ26×65 → r 1.30 / h 6.50（BS-01 当前采用）
+  // 径向锚点按 ~0.40r / ~0.95r / ~0.74r / ~0.31r 的比例随 r 缩放，与另两种型号保持一致。
   '18650': [
     { partId: 'terminal', label: '正极凸台', anchor: [0, 3.19, 0] },
     { partId: 'vent', label: '安全阀刻痕', anchor: [0.36, 3.08, 0.36] },
@@ -189,6 +191,15 @@ const HOTSPOTS = {
     { partId: 'negativeCap', label: '负极端面', anchor: [0, -3.42, 0] },
     { partId: 'roll', label: '卷芯（剖视）', anchor: [0, 0, 0] },
     { partId: 'tabs', label: '极耳', anchor: [0.32, 2.7, 0.22] }
+  ],
+  '26650': [
+    { partId: 'terminal', label: '正极凸台', anchor: [0, 3.19, 0] },
+    { partId: 'vent', label: '安全阀刻痕', anchor: [0.52, 3.08, 0.52] },
+    { partId: 'shell', label: '镀镍钢壳', anchor: [1.24, 0.55, 0.43] },
+    { partId: 'wrap', label: '热缩膜标签', anchor: [-0.97, -1.6, 0.89] },
+    { partId: 'negativeCap', label: '负极端面', anchor: [0, -3.17, 0] },
+    { partId: 'roll', label: '卷芯（剖视）', anchor: [0, 0, 0] },
+    { partId: 'tabs', label: '极耳', anchor: [0.40, 2.5, 0.27] }
   ],
   prism: [
     { partId: 'posTerminal', label: '正极极柱', anchor: [-0.6, 2.0, 0] },
@@ -261,17 +272,19 @@ function makeHotspotSprite() {
 function buildModel() {
   disposeModel()
   modelGroup = new THREE.Group()
-  // 基准缩放：模型本身已是真实尺寸（21700 高 7.0 unit），这里只把整体观感缩到画框内
+  // 基准缩放：模型本身已是真实尺寸（26650 高 6.5 unit），这里只把整体观感缩到画框内
   modelGroup.scale.setScalar(0.6)
 
-  if (shape.value === '18650' || shape.value === '21700') {
+  if (['18650', '21700', '26650'].includes(shape.value)) {
     // 真实外形尺寸（1 unit = 10 mm），不再手写一套缩小版的假尺寸
     const { r, h } = CELL_SPECS[shape.value]
     const cell = buildCylindricalCell({
       format: shape.value,
       brand: shape.value,
       voltage: 3.6,
-      capacity: shape.value === '21700' ? 5000 : 3500
+      // 18650 常见 3500 mAh；21700 与 26650 都取 5000 mAh 量级，
+      // 这样与 BS-01 的"1C = 5.0 A"口径一致，不会出现同一页两套容量前提。
+      capacity: shape.value === '18650' ? 3500 : 5000
     })
     modelGroup.add(cell)
 
@@ -536,8 +549,10 @@ let onResize = () => {}
 onMounted(async () => {
   await nextTick()
   // 取景：拆解条移到舞台外后，画面底部不再被遮，模型可以吃满画幅。
-  // 21700 高 7.0 unit × 基准缩放 0.6 = 4.2 unit；7.2 距离 / fov 40 下约占画幅高度的 8 成。
-  // 圆柱细长，左右两侧天然留白，所以四角的控件（外形切换、尺寸、重置）都不会压到模型。
+  // 26650 高 6.5 unit × 基准缩放 0.6 = 3.9 unit；7.2 距离 / fov 40 下约占画幅高度的 7 成半。
+  // 圆柱左右两侧天然留白，所以四角的控件（外形切换、尺寸、重置）都不会压到模型。
+  // （由 21700 改为 26650 后模型矮了 0.3 unit、粗了 0.5 unit，画幅占比略降但横向更饱满，
+  //   取景参数保持不变即可。）
   //
   // 本页是"细看"场景，缩放与平移都打开 —— 与首页展台恰好相反。
   // 手感靠参数兜底，而不是靠关掉功能：

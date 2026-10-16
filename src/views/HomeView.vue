@@ -52,7 +52,7 @@
             <i class="num">SPECIMEN 01</i>
           </div>
           <dl>
-            <div><dt>外形</dt><dd>圆柱 21700 · Φ21×70 mm</dd></div>
+            <div><dt>外形</dt><dd>圆柱 26650 · Φ26×65 mm</dd></div>
             <div><dt>化学体系</dt><dd>NMC · 概念设定</dd></div>
             <div><dt>状态</dt><dd class="healthy">健康观测</dd></div>
             <div><dt>读数性质</dt><dd>演示数值 · 非实时测量</dd></div>
@@ -257,10 +257,13 @@ onMounted(async () => {
     specimen.position.x = -1.15
     scene.scene.add(specimen)
 
-    // 真实规格圆柱电芯：21700 = Φ21 × 70 mm（1 unit = 10 mm），不再做非等比变形
-    const CELL_H = 7.0
+    // 真实规格圆柱电芯：26650 = Φ26 × 65 mm（1 unit = 10 mm），不做非等比变形。
+    // 由 21700 改为 26650：同为真实标称规格，直径粗 24%、高径比 3.33→2.50，
+    // 在首页这块横向画框里不再是一根细长的签子；且容量仍在 5000 mAh 量级，
+    // 全站"1C = 5.0 A"的推导不受影响。
+    const CELL_H = 6.5
     const HALF = CELL_H / 2
-    const cell = buildCylindricalCell({ format: '21700', brand: 'BS-01', voltage: 3.6, capacity: 5000 })
+    const cell = buildCylindricalCell({ format: '26650', brand: 'BS-01', voltage: 3.6, capacity: 5000 })
     specimen.add(cell)
 
     // 展台底座：双层光环，做极缓慢的呼吸

@@ -71,7 +71,7 @@
           <div class="ro panel"><i>电压</i><b class="num">{{ voltage.toFixed(2) }}</b><u>V</u></div>
           <div class="ro panel"><i>功率</i><b class="num">{{ powerW.toFixed(1) }}</b><u>W</u></div>
         </div>
-        <p class="ocv-note">电压按线性化 OCV 估算（3.0 → 4.2 V）；真实开路电压曲线中段更平、两端更陡，这里是教学简化，不代表实测曲线。电流按倍率取 1C 的整数倍（BS-01 为 21700 / 5 Ah，1C = 5.0 A）。</p>
+        <p class="ocv-note">电压按线性化 OCV 估算（3.0 → 4.2 V）；真实开路电压曲线中段更平、两端更陡，这里是教学简化，不代表实测曲线。电流按倍率取 1C 的整数倍（BS-01 为 26650 / 5 Ah，1C = 5.0 A）。</p>
 
         <!-- 阶段解释卡（三层固定结构） -->
         <transition name="fade-slide" mode="out-in">
@@ -171,11 +171,12 @@ const labelScreens = ref([])
 const modeName = computed(() => ({ idle: '静置', charge: '充电中', full: '已充满', discharge: '放电中' }[mode.value]))
 const stateHint = computed(() => ({ idle: '电路断开 · 热运动', charge: '外电源供能', full: '能量已储存', discharge: '负载做功' }[mode.value]))
 
-// SOC 与实验进度用固定演示关系（BS-01：21700 / 5000 mAh 概念电芯，OCV 3.0-4.2V）
+// SOC 与实验进度用固定演示关系（BS-01：26650 / 5000 mAh 概念电芯，OCV 3.0-4.2V）
 const soc = computed(() => progress.value)
-// 1C 的定义就是"1 小时充满/放完额定容量所需电流"。BS-01 是第一页那枚 21700 概念电芯，
+// 1C 的定义就是"1 小时充满/放完额定容量所需电流"。BS-01 是第一页那枚 26650 概念电芯，
 // 额定容量 5000 mAh（见 HomeView 的 buildCylindricalCell({ capacity: 5000 })），
 // 所以 1C = 5.0 A。旧值 2.2 A 是早期 2.2 Ah 设定的残留，与页面上标注的"1C"矛盾（已订正）。
+// 注：由 21700 改为 26650 只动外形尺寸，标称容量仍是 5000 mAh，所以 1C 不变。
 const I1C = 5.0
 const cccv = computed(() => {
   // 充电末段电流衰减（CC-CV 概念）

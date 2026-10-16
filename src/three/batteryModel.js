@@ -4,30 +4,43 @@ import * as THREE from 'three'
 import { PALETTE, pool } from './labScene.js'
 
 /**
- * 圆柱电芯外壳 —— 按真实 18650 / 21700 尺寸比例建模
+ * 圆柱电芯外壳 —— 按真实 18650 / 21700 / 26650 尺寸比例建模
  *
- * 单位制：1 unit = 10 mm。真实 21700 = Φ21 × 70 mm → r 1.05 / h 7.00；
- * 18650 = Φ18 × 65 mm → r 0.90 / h 6.50。
+ * 单位制：1 unit = 10 mm。
+ *   21700 = Φ21 × 70 mm → r 1.05 / h 7.00（高径比 3.33:1）
+ *   18650 = Φ18 × 65 mm → r 0.90 / h 6.50（3.61:1）
+ *   26650 = Φ26 × 65 mm → r 1.30 / h 6.50（2.50:1）← BS-01 当前采用
  *
- * 旧实现用 r 1.05 / h 3.5，高径比只有 1.69:1，而真实规格是 21700 的 3.33:1、
- * 18650 的 3.61:1 —— 等于把电池建成了矮胖罐子，这是"看起来不像真电池"的根本原因。
- * 本版按真实比例重建，并补齐真实结构：正极凸台、顶盖、肩部收口、镀镍钢壳、
- * 热缩膜标签、泄压阀刻痕、底部环槽。
+ * 为什么 BS-01 从 21700 改成 26650：
+ *   21700 的 3.33:1 是真实比例，但在首页那块约 1.47:1 的横向画框里，
+ *   电芯只占画幅宽度的约 15%，看上去"又瘦又孤单"。
+ *   26650 同样是真实标称规格，直径粗 24%、高径比降到 2.50:1，视觉重量明显上来；
+ *   关键是它标称容量仍在 5000 mAh 量级 —— 全站的"1C = 5.0 A"推导一个字都不用动。
+ *   （曾考虑 4680：Φ46×80 更壮，但它真实容量约 26 Ah，会把 I1C、CC-CV 动画
+ *     坐标轴、自测题与小锂语料全部推翻，代价与收益不成比例。）
+ *
+ * ⚠️ r 与 h 是真实标称尺寸；topR/capR/capH/shoulderH/plateH/bottomH 是壳体细节，
+ *    按既有两种型号的比例换算而来（径向细节随 r 缩放、轴向细节随 h 缩放），
+ *    不是逐型号抄来的实测值。
+ *
+ * 历史：旧实现曾用 r 1.05 / h 3.5（高径比 1.69:1），把电池建成了矮胖罐子，
+ * 那是"看起来不像真电池"的根本原因，已按真实比例重建。
  */
 export const CELL_SPECS = {
   // r 壳半径 / h 总高 / topR 肩部收口半径 / capR 正极凸台半径 / capH 凸台高
   // shoulderH 肩高 / plateH 顶盖厚 / bottomH 底盖厚（单位均为 10 mm 的倍数）
   '18650': { r: 0.90, h: 6.50, topR: 0.70, capR: 0.275, capH: 0.11, shoulderH: 0.20, plateH: 0.06, bottomH: 0.085 },
-  '21700': { r: 1.05, h: 7.00, topR: 0.80, capR: 0.300, capH: 0.12, shoulderH: 0.22, plateH: 0.07, bottomH: 0.095 }
+  '21700': { r: 1.05, h: 7.00, topR: 0.80, capR: 0.300, capH: 0.12, shoulderH: 0.22, plateH: 0.07, bottomH: 0.095 },
+  '26650': { r: 1.30, h: 6.50, topR: 0.99, capR: 0.370, capH: 0.11, shoulderH: 0.20, plateH: 0.07, bottomH: 0.090 }
 }
 
 export function buildCylindricalCell({
-  format = '21700',
+  format = '26650',
   brand = 'BS-01',
   voltage = 3.6,
   capacity = 5000
 } = {}) {
-  const spec = CELL_SPECS[format] || CELL_SPECS['21700']
+  const spec = CELL_SPECS[format] || CELL_SPECS['26650']
   const { r, h, topR, capR, capH, shoulderH, plateH, bottomH } = spec
   const g = new THREE.Group()
 
@@ -64,7 +77,7 @@ export function buildCylindricalCell({
   plate.name = 'positiveCap'
   g.add(plate)
 
-  // 4) 正极凸台（真实尺寸：18650 为 Φ5.5 mm，21700 为 Φ6.0 mm）
+  // 4) 正极凸台（18650 Φ5.5 mm / 21700 Φ6.0 mm / 26650 ≈Φ7.4 mm）
   const terminal = new THREE.Mesh(new THREE.CylinderGeometry(capR, capR * 1.08, capH, 40), steelBright)
   terminal.position.y = capBottom + capH / 2
   terminal.name = 'terminal'
