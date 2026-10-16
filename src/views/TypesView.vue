@@ -8,7 +8,7 @@
     </header>
 
     <!-- 数字展柜 -->
-    <div class="showcase">
+    <div class="showcase" ref="showcaseBox">
       <div class="stage-col">
         <div class="stage panel" ref="stageBox">
           <div ref="threeBox" class="three-box"></div>
@@ -162,6 +162,9 @@ const chemCompare = ref(null)
 const curChem = computed(() => chemistries.find((c) => c.key === chem.value))
 
 const stageBox = ref(null), threeBox = ref(null), guideSvg = ref(null), radarBox = ref(null)
+// 全屏作用在整个 .showcase 上，而不是只作用在舞台 —— 抽屉（数字展柜）是舞台的兄弟节点，
+// 只全屏舞台会把介绍面板挡在全屏元素之外，变成"能转模型但看不到部件介绍"。
+const showcaseBox = ref(null)
 let scene = null, raf = 0, modelGroup = null, radar = null
 const clock = new THREE.Clock()
 
@@ -620,12 +623,13 @@ function resetView() {
 
 /* ── 全屏观察 ──
    竖向拆解要的是纵向空间，而普通版式下舞台高度只有 315 px 上下，给不出来。
-   全屏作用在 .stage 上，画布尺寸随之变化，labScene 里的 resize 会自己跟上。 */
+   全屏元素取整个 .showcase：舞台与右侧抽屉都在里面，
+   这样全屏时依然能一边拖拽转模型、一边看部件介绍卡。 */
 const fsOn = ref(false)
 
 async function toggleFullscreen() {
   try {
-    if (!document.fullscreenElement) await stageBox.value?.requestFullscreen()
+    if (!document.fullscreenElement) await showcaseBox.value?.requestFullscreen()
     else await document.exitFullscreen()
   } catch {
     // 用户拒绝、或浏览器/内嵌框架不允许全屏：静默降级，不影响其它功能
@@ -778,15 +782,27 @@ onBeforeUnmount(() => {
 .showcase { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; align-items: start; }
 .stage-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .stage { position: relative; height: var(--stage-h); overflow: hidden; min-width: 0; }
-/* 全屏：舞台铺满视口，画布随之变高，竖向拆解才有地方展开。
-   --stage-h 在正常版式下只有 360—530 px，全屏后要覆盖掉。 */
-.stage:fullscreen {
-  height: 100vh; width: 100vw;
-  border: 0; border-radius: 0;
+/* 全屏：整个展柜（左边舞台 + 右边抽屉）一起铺满视口。
+   只全屏舞台的话，抽屉会被挡在全屏元素之外 —— 能转模型、却看不到部件介绍。
+   --stage-h 正常版式下只有 360—530 px，全屏里必须覆盖掉，否则舞台还是那么矮。 */
+.showcase:fullscreen {
+  width: 100vw; height: 100vh;
+  grid-template-columns: minmax(0, 1.9fr) minmax(320px, 1fr);
+  gap: 18px; padding: 16px;
+  align-items: stretch;
   background: #070b14;
-  /* 全屏里四角控件保持可见：换外形、重置视角、退出全屏都还要能点 */
+  box-sizing: border-box;
+  .stage-col { height: 100%; min-height: 0; }
+  .stage { flex: 1 1 auto; min-height: 0; border-radius: 12px; }
+  /* 抽屉跟着撑满：全屏里介绍卡要在，而且要够高才看得完五条词条 */
+  .drawer { height: auto; max-height: 100%; }
+  /* 四角控件留出内边距，别贴着屏幕边 */
   .shape-row { left: 24px; bottom: 24px; }
   .stage-tools { right: 24px; top: 20px; }
+}
+@media (max-width: 767px) {
+  /* 窄屏全屏：单列，抽屉仍走 .is-sheet 的底部上滑面板 */
+  .showcase:fullscreen { grid-template-columns: minmax(0, 1fr); padding: 10px; }
 }
 .three-box { position: absolute; inset: 0; cursor: grab; }
 .guide-svg { position: absolute; inset: 0; pointer-events: none; z-index: 5;
