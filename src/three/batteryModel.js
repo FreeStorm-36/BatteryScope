@@ -322,28 +322,48 @@ export function buildTabs({ r = 1.0, h = 6.6, len = 1.1 } = {}) {
 /**
  * Li⁺ / e⁻ 粒子系统 —— InstancedMesh + 预分配进度池
  * pathFn(progress01) -> Vector3（写入 pool.v3）
+ *
+ * 流动"真实感"的三个要点（都不是装饰，而是让画面符合它自己声称的语义）：
+ *  ① 每颗粒子有自己的**迁移率与慢周期相位** —— 真实扩散里离子/电子的速率是有分布的，
+ *     原先只给 ±30% 的固定抖动，整队看起来像传送带。
+ *  ② 两端**渐隐**（edge 参数控制范围）—— 原先 prog 越过 1 会直接跳回 0，
+ *     肉眼就是"啪一下瞬移"。渐隐后读作"Li⁺ 嵌入电极 → 从另一侧脱出"，反而更贴机理。
+ *  ③ 接收 `fluxScale` —— 由页面的倍率（C）驱动。这是第 03 章验收标准里
+ *     「倍率才改变通量」在三维模型上的落地；此前速度写死，倍率对粒子毫无影响。
  */
-export function buildParticleFlow({ count = 60, size = 0.09, color = PALETTE.li, pathFn, speed = 0.12 } = {}) {
+export function buildParticleFlow({ count = 60, size = 0.09, color = PALETTE.li, pathFn, speed = 0.12, edge = 0.12 } = {}) {
   const geo = new THREE.SphereGeometry(size, 8, 8)
   const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 }) // 自发光感
   const mesh = new THREE.InstancedMesh(geo, mat, count)
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
   mesh.frustumCulled = false
   const data = []
-  for (let i = 0; i < count; i++) data.push({ prog: i / count, jitter: Math.random() * 0.6 + 0.7 })
+  for (let i = 0; i < count; i++) {
+    data.push({
+      prog: i / count,
+      speedJit: 0.55 + Math.random() * 0.9, // 迁移率差异：0.55×—1.45×
+      phase: Math.random() * Math.PI * 2, // 慢周期相位，让速度有节奏地快慢
+      sizeJit: 0.85 + Math.random() * 0.35
+    })
+  }
+  let acc = 0
 
-  function update(dt, dir = 1, active = true) {
+  function update(dt, dir = 1, active = true, fluxScale = 1) {
     mesh.visible = active
     if (!active) return
+    acc += dt
     for (let i = 0; i < count; i++) {
       const p = data[i]
-      p.prog += dir * speed * dt * p.jitter
+      // 速度 = 基础 × 个体迁移率 × 慢调制 × 通量系数（倍率）
+      const mod = 0.75 + 0.35 * Math.sin(acc * 1.6 + p.phase)
+      p.prog += dir * speed * dt * p.speedJit * mod * fluxScale
       if (p.prog > 1) p.prog -= 1
       if (p.prog < 0) p.prog += 1
       pathFn(p.prog, pool.v3, i)
       pool.dummy.position.copy(pool.v3)
-      const s = 0.85 + 0.3 * Math.sin(p.prog * Math.PI)
-      pool.dummy.scale.setScalar(s)
+      // 两端渐隐：进入/离开电极时缩到 0，避免循环点上的突兀瞬移
+      const fade = Math.min(1, Math.min(p.prog, 1 - p.prog) / edge)
+      pool.dummy.scale.setScalar(p.sizeJit * Math.max(0, fade))
       pool.dummy.updateMatrix()
       mesh.setMatrixAt(i, pool.dummy.matrix)
     }

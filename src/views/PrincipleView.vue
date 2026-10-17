@@ -469,7 +469,15 @@ onMounted(async () => {
       const row = i % 7, col = Math.floor(i / 7) % 4
       if (flowState === 'run') {
         const x = -1.35 + ((t + i * 0.061) % 1) * 2.7
-        v.set(x, (row - 3) * 0.36, (col - 1.5) * 0.34)
+        // 横向与纵深各加一点缓慢游走：真实迁移不是沿铅笔线走的，完全对齐成格会像传送带。
+        // 纯形貌示意，不参与任何读数（本页所有数字仍来自 OCV / 倍率的概念设定）。
+        const ph = i * 1.7
+        const t2 = clock.elapsedTime
+        v.set(
+          x,
+          (row - 3) * 0.36 + Math.sin(t2 * 1.3 + ph) * 0.045,
+          (col - 1.5) * 0.34 + Math.cos(t2 * 1.05 + ph) * 0.04
+        )
       } else {
         // 停驻：按分布状态聚在某一侧 + 热运动抖动
         const center = flowState === 'anode' ? 1.05 : (flowState === 'cathode' ? -1.05 : ((i % 2 ? 0.75 : -0.75)))
@@ -518,9 +526,14 @@ onMounted(async () => {
     else if (mode.value === 'charge' && !playing.value && progress.value > 0.9) flowState = 'anode'
     else flowState = flowing ? 'run' : 'idle'
 
-    liFlow.update(dt, flowing ? (charging ? 1 : -1) : 0, showLiPath.value)
+    // 通量系数：由**倍率**决定，不受播放速度影响 —— 这正是本页"倍率改变电流与极化，
+    // 播放速度只改变动画快慢"那句话在三维模型上的落地。
+    // 0.5C → 0.75×，1C → 1.0×，2C → 1.5×：倍率翻四倍，粒子流速差两倍，看得见但不过火。
+    const flux = 0.5 + 0.5 * rate.value
+
+    liFlow.update(dt, flowing ? (charging ? 1 : -1) : 0, showLiPath.value, flux)
     eBranch = charging ? 'left' : 'right'
-    eFlow.update(dt, flowing ? (charging ? 1 : -1) : 0, showEPath.value && flowing)
+    eFlow.update(dt, flowing ? (charging ? 1 : -1) : 0, showEPath.value && flowing, flux)
 
     // 路径与箭头
     liPathLine.visible = showLiPath.value
