@@ -209,27 +209,9 @@ const PART_INFO = {
 /* ── 每个外形的热点（锚点为模型局部坐标） ── */
 const HOTSPOTS = {
   // 锚点按真实尺寸模型（1 unit = 10 mm）标定：
-  // 18650 = Φ18×65 → r 0.90 / h 6.50；21700 = Φ21×70 → r 1.05 / h 7.00；
   // 26650 = Φ26×65 → r 1.30 / h 6.50（BS-01 当前采用）
-  // 径向锚点按 ~0.40r / ~0.95r / ~0.74r / ~0.31r 的比例随 r 缩放，与另两种型号保持一致。
-  '18650': [
-    { partId: 'terminal', label: '正极凸台', anchor: [0, 3.19, 0] },
-    { partId: 'vent', label: '安全阀刻痕', anchor: [0.36, 3.08, 0.36] },
-    { partId: 'shell', label: '镀镍钢壳', anchor: [0.86, 0.55, 0.3] },
-    { partId: 'wrap', label: '热缩膜标签', anchor: [-0.67, -1.6, 0.62] },
-    { partId: 'negativeCap', label: '负极端面', anchor: [0, -3.17, 0] },
-    { partId: 'roll', label: '卷芯（剖视）', anchor: [0, 0, 0] },
-    { partId: 'tabs', label: '极耳', anchor: [0.28, 2.5, 0.19] }
-  ],
-  '21700': [
-    { partId: 'terminal', label: '正极凸台', anchor: [0, 3.44, 0] },
-    { partId: 'vent', label: '安全阀刻痕', anchor: [0.42, 3.31, 0.42] },
-    { partId: 'shell', label: '镀镍钢壳', anchor: [1.0, 0.6, 0.35] },
-    { partId: 'wrap', label: '热缩膜标签', anchor: [-0.78, -1.7, 0.72] },
-    { partId: 'negativeCap', label: '负极端面', anchor: [0, -3.42, 0] },
-    { partId: 'roll', label: '卷芯（剖视）', anchor: [0, 0, 0] },
-    { partId: 'tabs', label: '极耳', anchor: [0.32, 2.7, 0.22] }
-  ],
+  // 径向锚点按 ~0.40r / ~0.95r / ~0.74r / ~0.31r 的比例随 r 缩放。
+  // 18650 / 21700 两个规格已按需求移除，对应锚点一并删掉。
   '26650': [
     { partId: 'terminal', label: '正极凸台', anchor: [0, 3.19, 0] },
     { partId: 'vent', label: '安全阀刻痕', anchor: [0.52, 3.08, 0.52] },
@@ -316,16 +298,14 @@ function buildModel() {
   // 基准缩放：模型本身已是真实尺寸（26650 高 6.5 unit），这里只把整体观感缩到画框内
   modelGroup.scale.setScalar(0.6)
 
-  if (['18650', '21700', '26650'].includes(shape.value)) {
+  if (shape.value === '26650') {
     // 真实外形尺寸（1 unit = 10 mm），不再手写一套缩小版的假尺寸
     const { r, h } = CELL_SPECS[shape.value]
     const cell = buildCylindricalCell({
       format: shape.value,
       brand: shape.value,
       voltage: 3.6,
-      // 18650 常见 3500 mAh；21700 与 26650 都取 5000 mAh 量级，
-      // 这样与 BS-01 的"1C = 5.0 A"口径一致，不会出现同一页两套容量前提。
-      capacity: shape.value === '18650' ? 3500 : 5000
+      capacity: 5000
     })
     modelGroup.add(cell)
 

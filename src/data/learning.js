@@ -384,7 +384,7 @@ export const dependencies = [
 ]
 
 export const assetsNote = {
-  models: '全部三维模型由本项目**程序化生成**（Three.js 几何体堆叠），未使用任何外部模型文件；圆柱电芯尺寸按 26650、21700 与 18650 的真实标称尺寸换算（建模单位 1 unit = 10 mm）。',
+  models: '全部三维模型由本项目**程序化生成**（Three.js 几何体堆叠），未使用任何外部模型文件；圆柱电芯尺寸按 26650 的真实标称尺寸换算（建模单位 1 unit = 10 mm）。',
   textures: '未使用外部贴图文件；表面外观由材质参数（金属度 / 粗糙度 / 颜色）直接定义。',
   fonts: '仅使用系统字体栈（PingFang SC / HarmonyOS Sans SC / MiSans / 微软雅黑等），未引入任何第三方网络字体，不存在字体授权问题。',
   icons: '界面图标为项目内联 SVG 路径，自行绘制。',
