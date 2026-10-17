@@ -80,7 +80,8 @@ export const mechanisms = [
     impact: '膜每长厚一点，就永久"锁住"一点可循环的锂离子，容量缓慢下降。',
     equation: 'dL_SEI/dt ∝ 1/L_SEI',
     symbols: 'L_SEI：SEI 膜厚度。膜越薄长得越快，越厚长得越慢（所以早期老化快、后段趋缓）。',
-    factors: '高温、高 SOC 存放会加速 SEI 生长。', link: '容量下降（LLI，损失锂库存）'
+    factors: '高温、高 SOC 存放会加速 SEI 生长。', link: '容量下降（LLI，损失锂库存）',
+    profile: [3, 1, 0], rev: '不可逆：锂被永久锁进膜里', pace: '全程缓慢，且自我减速（L∝√t）'
   },
   {
     key: 'plating', short: '析锂', term: '锂析出 / Lithium Plating', color: '#e2e8f0',
@@ -90,7 +91,8 @@ export const mechanisms = [
     impact: '枝晶可能刺穿隔膜造成内短路；析出的锂失去活性，容量直接损失。',
     equation: 'j_Li > 0 ⟺ U_anode − φ_s + φ_e < 0',
     symbols: 'j_Li：析锂通量；U_anode：锂沉积平衡电位；φ_s、φ_e：固相/液相电位。电位越过临界值即开始析锂。',
-    factors: '低温、快充、过充。', link: '容量损失 + 安全风险上升（内短路隐患）'
+    factors: '低温、快充、过充。', link: '容量损失 + 安全风险上升（内短路隐患）',
+    profile: [2, 2, 3], rev: '析出的锂失去活性即不可逆；但停止快充可停止新增', pace: '事件型：低温 / 快充时突发'
   },
   {
     key: 'crack', short: '颗粒开裂', term: '颗粒应力开裂与疲劳', color: '#fbbf24',
@@ -100,7 +102,8 @@ export const mechanisms = [
     impact: '裂纹暴露新表面生成更多 SEI；严重时颗粒碎裂、失去电接触。',
     equation: 'dε_a/dt = −k_LAM · (σ_h / σ_crit)^m',
     symbols: 'σ_h：颗粒内应力；σ_crit：临界应力；k_LAM、m：材料常数。应力越接近临界值，损伤累积越快。',
-    factors: '深充深放（大 DOD）、高倍率。', link: '内阻上升、活性材料损失（LAM）'
+    factors: '深充深放（大 DOD）、高倍率。', link: '内阻上升、活性材料损失（LAM）',
+    profile: [2, 3, 1], rev: '不可逆：裂纹不会自愈', pace: '随循环累积，深充深放显著加速'
   },
   {
     key: 'lam', short: '材料失活', term: '活性材料损失（LAM）', color: '#94a3b8',
@@ -110,7 +113,8 @@ export const mechanisms = [
     impact: '可用活性材料减少，容量直接下降，且不可逆。',
     equation: 'Q_avail = Σ m_active,i · Q_spec,i',
     symbols: 'm_active,i：仍保持电接触的活性材料质量；失活颗粒不再计入求和。',
-    factors: '长期深循环、机械滥用。', link: '容量台阶式下降（LAM，负极/正极侧）'
+    factors: '长期深循环、机械滥用。', link: '容量台阶式下降（LAM，负极/正极侧）',
+    profile: [3, 1, 0], rev: '不可逆：掉队的颗粒不再回来', pace: '台阶式：颗粒一个个失去电接触'
   },
   {
     key: 'electrolyte', short: '电解液减少', term: '电解液损耗', color: '#22d3ee',
@@ -120,7 +124,8 @@ export const mechanisms = [
     impact: '离子传输阻力变大，内阻上升，倍率性能下降。',
     equation: 'R_ion ∝ l_sep / (ε_e · κ)',
     symbols: 'l_sep：隔膜厚度；ε_e：电解液体积分数；κ：电导率。电解液越少，离子路径电阻越大。',
-    factors: '高温储存、长期循环。', link: '内阻上升、功率能力下降'
+    factors: '高温储存、长期循环。', link: '内阻上升、功率能力下降',
+    profile: [1, 3, 1], rev: '不可逆：被消耗的电解液补不回来', pace: '缓慢，高温储存显著加快'
   },
   {
     key: 'gas', short: '产气鼓胀', term: '产气与形变（鼓胀）', color: '#f87171',
@@ -130,7 +135,8 @@ export const mechanisms = [
     impact: '界面接触变差、局部压力升高，严重时是热失控的前兆信号之一。',
     equation: 'p_gas = n_gas·R·T / V_free',
     symbols: 'n_gas：产气摩尔数；V_free：电芯内自由体积。产气越多、自由空间越小，内压越高。',
-    factors: '过充、高温、析锂后副反应。', link: '形变、安全隐患'
+    factors: '过充、高温、析锂后副反应。', link: '形变、安全隐患',
+    profile: [1, 2, 3], rev: '不可逆：气体不会自行消失', pace: '事件型：过充 / 高温 / 析锂后副反应'
   }
 ]
 

@@ -94,6 +94,20 @@
               </div>
             </div>
             <i class="term">{{ curMech.term }}</i>
+            <!-- 机制特征签名：六个机制原先都是一模一样的五段文字，读完分不出谁是谁。
+                 这里把真正区分它们的三条轴直接摆出来 —— 主要打容量 / 内阻 / 安全，
+                 外加"节奏"（缓慢自限 vs 事件型突发）与可逆性。对比才是让特点显形的办法。 -->
+            <div class="m-sig">
+              <div v-for="(lab, i) in ['容量', '内阻', '安全']" :key="lab" class="sig-item">
+                <span class="sig-lab">{{ lab }}</span>
+                <span class="sig-dots">
+                  <i v-for="n in 3" :key="n" :class="{ on: n <= curMech.profile[i] }"
+                     :style="{ background: n <= curMech.profile[i] ? curMech.color : 'transparent' }"></i>
+                </span>
+              </div>
+              <div class="sig-item wide"><span class="sig-lab">节奏</span><b>{{ curMech.pace }}</b></div>
+              <div class="sig-item wide"><span class="sig-lab">可逆性</span><b>{{ curMech.rev }}</b></div>
+            </div>
             <dl class="pop">
               <dt>它是什么</dt><dd>{{ curMech.what }}</dd>
               <dt>为什么出现</dt><dd>{{ curMech.why }}</dd>
@@ -131,6 +145,29 @@
         <div class="inv-track"><div class="inv-fill" :style="{ width: Math.max(2, readout.value) + '%', background: curMech.color }"></div></div>
         <p class="inv-note">{{ readout.note }}</p>
       </div>
+    </div>
+
+    <!-- 六机制对照矩阵：一次看到"谁主要打容量、谁主要打内阻、谁主要打安全"。
+         单看一个机制永远分不出特点，横向摆在一起才看得出来 —— 这是本页最缺的一件事。 -->
+    <div class="mech-matrix panel" v-if="filter === 'all'">
+      <div class="mm-head">
+        <h5>六种机制对照 <i>同一张表看清各自的"主战场"</i></h5>
+        <span class="mm-hint">点任意一行 → 进入该机制专属视图</span>
+      </div>
+      <div class="mm-grid">
+        <div class="mm-row mm-title" aria-hidden="true">
+          <span>机制</span><span>容量 ↓</span><span>内阻 ↑</span><span>安全 ⚠</span><span>节奏</span>
+        </div>
+        <button v-for="m in mechanisms" :key="m.key" type="button" class="mm-row mm-item" @click="filter = m.key">
+          <span class="mm-name"><i class="m-dot" :style="{ background: m.color }"></i>{{ m.short }}</span>
+          <span v-for="(lv, ci) in m.profile" :key="ci" class="mm-cells">
+            <i v-for="n in 3" :key="n" :class="{ on: n <= lv }"
+               :style="{ background: n <= lv ? m.color : 'transparent' }"></i>
+          </span>
+          <span class="mm-pace">{{ m.pace }}</span>
+        </button>
+      </div>
+      <p class="mm-note">强度为<strong>定性三档对照</strong>，用于区分"主要影响什么"，不是量化评分，也不代表实测值。</p>
     </div>
 
     <!-- 动态图表 -->
@@ -804,6 +841,18 @@ onBeforeUnmount(() => {
   .mech-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   h4 { font-size: 15.5px; color: var(--text-1); display: flex; align-items: center; }
   .term { display: block; font-style: normal; font-size: 11.5px; color: var(--text-2); margin-top: 3px; }
+  /* 机制特征签名：三条区分轴 + 节奏 + 可逆性，一眼看出这个机制"打哪儿" */
+  .m-sig {
+    display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center;
+    margin-top: 10px; padding: 8px 10px;
+    border: 1px solid var(--hairline); border-radius: 9px;
+    background: rgba(77, 168, 255, 0.05);
+  }
+  .sig-item { display: inline-flex; align-items: center; gap: 6px;
+    .sig-lab { font-size: 11px; color: var(--blue); }
+    &.wide { flex-basis: 100%; b { font-size: 12px; font-weight: 500; color: var(--text-2); } } }
+  .sig-dots { display: inline-flex; gap: 3px;
+    i { width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--hairline-strong); } }
   dl { margin-top: 10px; display: grid; grid-template-columns: 84px 1fr; gap: 7px 10px;
     dt { font-size: 12px; color: var(--blue); }
     dd { font-size: 12.5px; color: var(--text-2); line-height: 1.62; } }
@@ -815,6 +864,35 @@ onBeforeUnmount(() => {
 .info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
   /* 单机制聚焦：读数面板独占一行，不留半幅空白 */
   &.solo { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── 六机制对照矩阵 ── */
+.mech-matrix { padding: 14px 16px; margin-top: 18px;
+  .mm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
+    h5 { font-size: 13px; color: var(--text-1); i { font-style: normal; font-size: 11px; color: var(--text-3); margin-left: 8px; } }
+    .mm-hint { font-size: 11px; color: var(--text-3); } }
+  .mm-grid { display: flex; flex-direction: column; gap: 2px; }
+  .mm-row { display: grid; grid-template-columns: minmax(96px, 1.1fr) 64px 64px 64px minmax(0, 2.4fr);
+    align-items: center; gap: 6px; padding: 6px 8px; border-radius: 7px; }
+  .mm-title { font-size: 10.5px; letter-spacing: 0.06em; color: var(--text-3); padding-bottom: 2px;
+    span:not(:first-child) { text-align: center; } }
+  .mm-item { border: 0; background: transparent; color: var(--text-2); font: inherit; text-align: left; cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease;
+    &:hover { background: rgba(77, 168, 255, 0.1); color: var(--text-1); } }
+  .mm-name { display: inline-flex; align-items: center; font-size: 12.5px; white-space: nowrap; }
+  .mm-cells { display: inline-flex; gap: 3px; justify-content: center;
+    i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--hairline-strong); } }
+  .mm-pace { font-size: 11.5px; color: var(--text-2); }
+  .mm-note { margin-top: 10px; font-size: 11px; color: var(--text-3); line-height: 1.65;
+    strong { color: var(--text-2); font-weight: 600; } }
+}
+@media (max-width: 767px) {
+  /* 窄屏：矩阵改两行式（机制名 + 三个强度），节奏文字换行掉到下面 */
+  .mech-matrix {
+    .mm-row { grid-template-columns: minmax(84px, 1fr) 46px 46px 46px; }
+    .mm-pace { display: none; }
+    .mm-title span:last-child { display: none; }
+  }
+}
 
 .finger { padding: 14px 16px;
   h5 { font-size: 13px; color: var(--text-1); i { font-style: normal; font-size: 11px; color: var(--text-3); margin-left: 8px; } }
