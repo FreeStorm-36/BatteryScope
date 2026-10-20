@@ -204,7 +204,7 @@ function send(text) {
   min-width: 20px; height: 20px; padding: 0 5px;
   display: grid; place-items: center;
   border-radius: 999px; background: var(--red); color: #fff;
-  font-size: 11px; font-weight: 600;
+  font-size: 14px; font-weight: 600;
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
 }
 
@@ -215,13 +215,13 @@ function send(text) {
   border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 14px;
   background: rgba(19, 26, 43, 0.94); backdrop-filter: blur(8px);
   box-shadow: var(--shadow-1);
-  color: var(--text-2); font-size: 12.5px; line-height: 1.7; text-align: left;
+  color: var(--text-2); font-size: 14.5px; line-height: 1.7; text-align: left;
   cursor: pointer;
   &:hover { border-color: rgba(245, 158, 11, 0.65); color: var(--text-1); }
   .rb-avatar { flex: 0 0 auto; }
   .rb-text { flex: 1; min-width: 0;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .rb-cta { flex: 0 0 auto; font-size: 11.5px; color: var(--amber); }
+  .rb-cta { flex: 0 0 auto; font-size: 14px; color: var(--amber); }
 }
 .robot-bubble-enter-active, .robot-bubble-leave-active { transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
 .robot-bubble-enter-from, .robot-bubble-leave-to { opacity: 0; transform: translateY(10px) scale(0.94); }
@@ -243,8 +243,8 @@ function send(text) {
   background: linear-gradient(180deg, rgba(34, 211, 238, 0.07), transparent);
   .rp-avatar { flex: 0 0 auto; }
   .rp-id { flex: 1; min-width: 0;
-    b { display: block; font-size: 14.5px; color: var(--text-1); }
-    i { font-style: normal; font-size: 11px; color: var(--text-3); } }
+    b { display: block; font-size: 16.5px; color: var(--text-1); }
+    i { font-style: normal; font-size: 14px; color: var(--text-3); } }
   .rp-close {
     flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center;
     border: 0; border-radius: 10px; background: transparent; color: var(--text-3); cursor: pointer;
@@ -259,13 +259,13 @@ function send(text) {
 }
 .rp-msg {
   max-width: 88%; padding: 9px 12px; border-radius: 12px;
-  font-size: 12.5px; line-height: 1.8; white-space: pre-wrap; word-break: break-word;
+  font-size: 14.5px; line-height: 1.8; white-space: pre-wrap; word-break: break-word;
   &.bot { align-self: flex-start; border: 1px solid var(--hairline); border-bottom-left-radius: 4px;
     background: rgba(20, 27, 46, 0.85); color: var(--text-2); }
   &.user { align-self: flex-end; border-bottom-right-radius: 4px;
     background: rgba(34, 211, 238, 0.12); border: 1px solid rgba(34, 211, 238, 0.28); color: var(--text-1); }
 }
-.rp-src { display: inline-block; margin-top: 6px; font-size: 11.5px; color: var(--cyan); text-decoration: none;
+.rp-src { display: inline-block; margin-top: 6px; font-size: 14px; color: var(--cyan); text-decoration: none;
   &:hover { text-decoration: underline; } }
 .rp-dots { display: inline-flex; gap: 5px; padding: 3px 2px;
   i { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); animation: rp-blink 1.1s infinite;
@@ -278,7 +278,7 @@ function send(text) {
   min-height: 32px; padding: 5px 11px;
   border: 1px solid var(--hairline); border-radius: 999px;
   background: rgba(77, 168, 255, 0.06); color: var(--text-2);
-  font-size: 11.5px; cursor: pointer; transition: all 0.2s ease;
+  font-size: 14px; cursor: pointer; transition: all 0.2s ease;
   &:hover { border-color: var(--hairline-strong); color: var(--text-1); background: rgba(77, 168, 255, 0.12); }
 }
 
@@ -286,19 +286,19 @@ function send(text) {
   input {
     flex: 1; min-width: 0; height: 40px; padding: 0 12px;
     border: 1px solid var(--hairline); border-radius: 10px;
-    background: rgba(10, 14, 26, 0.7); color: var(--text-1); font-size: 12.5px;
+    background: rgba(10, 14, 26, 0.7); color: var(--text-1); font-size: 14.5px;
     &::placeholder { color: var(--text-3); }
     &:focus { border-color: rgba(34, 211, 238, 0.5); outline: none; }
   }
   .rp-send {
     flex: 0 0 auto; min-width: 64px; height: 40px;
     border: 1px solid rgba(34, 211, 238, 0.4); border-radius: 10px;
-    background: rgba(34, 211, 238, 0.14); color: #a5f3fc; font-size: 12.5px; cursor: pointer;
+    background: rgba(34, 211, 238, 0.14); color: #a5f3fc; font-size: 14.5px; cursor: pointer;
     &:disabled { opacity: 0.45; cursor: default; }
     &:not(:disabled):hover { background: rgba(34, 211, 238, 0.24); }
   }
 }
-.rp-note { padding: 0 14px 12px; font-size: 10.5px; color: var(--text-3); line-height: 1.6; }
+.rp-note { padding: 0 14px 12px; font-size: 14px; color: var(--text-3); line-height: 1.6; }
 
 /* 手机：面板改为底部抽屉，避开导航栏；触摸目标撑到 44px */
 @media (max-width: 767px) {
@@ -309,7 +309,7 @@ function send(text) {
     width: auto; max-height: min(66vh, 480px);
   }
   .robot-bubble { max-width: calc(100vw - 110px); }
-  .rp-chip { min-height: 44px; padding: 8px 14px; font-size: 12.5px; }
-  .rp-input { input { height: 44px; font-size: 13px; } .rp-send { height: 44px; min-width: 72px; } }
+  .rp-chip { min-height: 44px; padding: 8px 14px; font-size: 14.5px; }
+  .rp-input { input { height: 44px; font-size: 15px; } .rp-send { height: 44px; min-width: 72px; } }
 }
 </style>

@@ -587,14 +587,14 @@ onBeforeUnmount(() => {
   --stage-h: clamp(400px, calc(100vh - 250px), 540px);
 }
 .head { position: relative;
-  .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
+  .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-2); }
 }
 .bench { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; }
 .stage { position: relative; height: var(--stage-h); overflow: hidden; min-width: 0; }
 .three-box { position: absolute; inset: 0; cursor: grab; }
 
 .legend { position: absolute; left: 16px; top: 14px; display: flex; flex-direction: column; gap: 7px; z-index: 4;
-  .lg { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-1); padding: 5px 12px; background: rgba(13,18,32,0.65); border-radius: 999px; width: fit-content;
+  .lg { display: flex; align-items: center; gap: 8px; font-size: 14.5px; color: var(--text-1); padding: 5px 12px; background: rgba(13,18,32,0.65); border-radius: 999px; width: fit-content;
     .dot { width: 11px; height: 11px; border-radius: 50%;
       &.li { background: #35e0c8; box-shadow: 0 0 8px #35e0c8; }
       &.el { background: #cfe4ff; box-shadow: 0 0 8px #cfe4ff; } } }
@@ -603,16 +603,16 @@ onBeforeUnmount(() => {
   display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .state-tag { padding: 9px 16px; text-align: right;
   b { display: block; font-size: 16px; color: var(--cyan); }
-  i { font-style: normal; font-size: 11.5px; color: var(--text-2); }
+  i { font-style: normal; font-size: 14px; color: var(--text-2); }
   &.charge b { color: #7df3ff; }
   &.discharge b { color: #ffd166; }
 }
 .view-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-.view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; }
-.view-hint { font-size: 11px; color: var(--text-3); letter-spacing: 0.02em;
+.view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; padding: 6px 12px; }
+.view-hint { font-size: 14px; color: var(--text-3); letter-spacing: 0.02em;
   .vh-touch { display: none; } }
 .label-tag {
-  position: absolute; padding: 2px 10px; font-size: 11.5px; color: var(--cyan); z-index: 3;
+  position: absolute; padding: 2px 10px; font-size: 14px; color: var(--cyan); z-index: 3;
   border-color: rgba(34,211,238,0.3); white-space: nowrap; pointer-events: none;
   transform: translate(-50%, -140%);
   &::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 1px; height: 7px; background: rgba(34,211,238,0.5); transform: translateX(-50%); }
@@ -623,7 +623,7 @@ onBeforeUnmount(() => {
   .kp-row { position: relative; height: 16px; margin-top: 2px;
     .kp { position: absolute; transform: translateX(-50%); background: none; border: none; cursor: pointer; padding: 0 4px;
       .kp-dot { display: block; width: 9px; height: 9px; border-radius: 50%; background: #22355c; border: 1.5px solid rgba(77,168,255,0.55); margin: 0 auto; transition: all 0.3s; }
-      .kp-name { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+      .kp-name { font-size: 14px; color: var(--text-3); white-space: nowrap; }
       &.on .kp-dot { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
       &.on .kp-name { color: var(--cyan); }
       &:hover .kp-name { color: var(--text-1); } }
@@ -632,7 +632,7 @@ onBeforeUnmount(() => {
 
 .controls { display: flex; flex-direction: column; gap: 12px; max-height: var(--stage-h); overflow-y: auto; padding-right: 2px; }
 .task-row { display: flex; gap: 10px;
-  .task-btn { flex: 1; justify-content: center; padding: 13px 8px; font-size: 15px;
+  .task-btn { flex: 1; justify-content: center; padding: 13px 8px; font-size: 17px;
     &.alt { background: linear-gradient(135deg, #b45309, #d97706); }
     &.live { box-shadow: 0 0 18px rgba(34,211,238,0.45); } } }
 .sub-row { display: flex; align-items: center; gap: 8px;
@@ -640,40 +640,40 @@ onBeforeUnmount(() => {
   .speed { margin-left: auto; display: flex; gap: 6px; } }
 .readouts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
   .ro { padding: 11px 8px; text-align: center;
-    i { display: block; font-style: normal; font-size: 11.5px; color: var(--text-2); margin-bottom: 4px; }
+    i { display: block; font-style: normal; font-size: 14px; color: var(--text-2); margin-bottom: 4px; }
     b { font-size: 23px; color: var(--text-1); }
     .cyan { color: var(--cyan); }
-    u { text-decoration: none; display: block; font-size: 10.5px; color: var(--text-3); margin-top: 2px; } } }
+    u { text-decoration: none; display: block; font-size: 14px; color: var(--text-3); margin-top: 2px; } } }
 // 电压读数的常驻口径：这里是线性化 OCV，不是实测开路电压曲线，必须写清楚
-.ocv-note { font-size: 11px; color: var(--text-3); line-height: 1.6; }
+.ocv-note { font-size: 14px; color: var(--text-3); line-height: 1.6; }
 .explain { padding: 14px 16px;
-  b { color: var(--blue); font-size: 14.5px; display: block; margin-bottom: 9px; }
+  b { color: var(--blue); font-size: 16.5px; display: block; margin-bottom: 9px; }
   dl { display: grid; grid-template-columns: 86px 1fr; gap: 8px 10px;
-    dt { font-size: 12px; color: var(--cyan); padding-top: 1px; }
-    dd { font-size: 13px; color: var(--text-1); line-height: 1.68; } }
-  .deep-btn { margin-top: 12px; padding: 5px 14px; font-size: 12px; }
+    dt { font-size: 14px; color: var(--cyan); padding-top: 1px; }
+    dd { font-size: 15px; color: var(--text-1); line-height: 1.68; } }
+  .deep-btn { margin-top: 12px; padding: 5px 14px; font-size: 14px; }
   .deep { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--hairline);
-    p { font-size: 12px; color: var(--text-2); line-height: 1.8; } } }
+    p { font-size: 14px; color: var(--text-2); line-height: 1.8; } } }
 .advanced { border: 1px solid var(--hairline); border-radius: 12px; padding: 12px 16px;
-  summary { cursor: pointer; font-size: 13px; color: var(--text-2); }
+  summary { cursor: pointer; font-size: 15px; color: var(--text-2); }
   .adv-body { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-  .rate-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-2);
-    .rate-note { font-style: normal; width: 100%; font-size: 11px; color: var(--text-3); } } }
-.switch { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-2); cursor: pointer;
+  .rate-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 14.5px; color: var(--text-2);
+    .rate-note { font-style: normal; width: 100%; font-size: 14px; color: var(--text-3); } } }
+.switch { display: flex; align-items: center; gap: 9px; font-size: 15px; color: var(--text-2); cursor: pointer;
   input { accent-color: var(--blue); width: 15px; height: 15px; } }
 .energy { padding: 16px 22px; display: flex; flex-direction: column; gap: 10px;
   .e-row { display: grid; grid-template-columns: 120px 1fr 52px; align-items: center; gap: 12px;
-    span { font-size: 13px; color: var(--text-2); }
-    b { text-align: right; font-size: 12.5px; color: var(--text-2); } }
+    span { font-size: 15px; color: var(--text-2); }
+    b { text-align: right; font-size: 14.5px; color: var(--text-2); } }
   .e-track { height: 9px; border-radius: 5px; background: rgba(77,168,255,0.1); overflow: hidden; }
   .e-fill { height: 100%; border-radius: 5px; transition: width 0.2s linear;
     &.chem { background: linear-gradient(90deg, #22d3ee, #0ea5e9); }
     &.elec { background: linear-gradient(90deg, #4da8ff, #818cf8); }
     &.loss { background: linear-gradient(90deg, #f59e0b, #ef4444); } }
-  .e-caliber { font-size: 11px; color: var(--text-3); } }
+  .e-caliber { font-size: 14px; color: var(--text-3); } }
 .bridge {
   display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 26px;
-  p { font-size: 15px; color: var(--text-1); } }
+  p { font-size: 17px; color: var(--text-1); } }
 /* 平板 / 窄笔记本：双栏塌成单栏。舞台仍是"画布铺满 + 浮层绝对定位"的桌面思路 */
 @media (max-width: 1080px) {
   /* minmax(0, 1fr) 而不是 1fr：`1fr` 的最小值是 auto（min-content），
@@ -705,10 +705,10 @@ onBeforeUnmount(() => {
   }
   .state-tag { padding: 8px 14px; text-align: left;
     b { font-size: 17px; }
-    i { font-size: 12px; } }
+    i { font-size: 14px; } }
   .view-tools { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
-  .view-reset { min-height: 44px; padding: 8px 14px; font-size: 12.5px; }
-  .view-hint { display: block; font-size: 12px;
+  .view-reset { min-height: 44px; padding: 8px 14px; font-size: 14.5px; }
+  .view-hint { display: block; font-size: 14px;
     .vh-mouse { display: none; }
     .vh-touch { display: inline; } }
   .timeline {
@@ -718,12 +718,12 @@ onBeforeUnmount(() => {
   .legend {
     position: static; order: 4;
     flex-direction: row; flex-wrap: wrap; gap: 8px;
-    .lg { font-size: 12.5px; padding: 6px 13px; }
+    .lg { font-size: 14.5px; padding: 6px 13px; }
   }
-  .label-tag { font-size: 12px; }
+  .label-tag { font-size: 14px; }
   .kp-row { height: 46px;
     .kp { min-height: 44px; min-width: 44px; }
-    .kp-name { font-size: 12px; } }
+    .kp-name { font-size: 14px; } }
 
   /* 触摸目标与可读性：手机上按钮偏小极易点错，统一撑到 44px；
      10.5—11.5px 的次要文字提到 12px。 */
@@ -731,15 +731,15 @@ onBeforeUnmount(() => {
     .btn-ghost { min-height: 44px; }
     .icon { width: 44px; height: 44px; } }
   .speed .btn-ghost { min-height: 44px; min-width: 46px; }
-  .deep-btn { min-height: 44px; padding: 8px 16px; font-size: 13px; }
+  .deep-btn { min-height: 44px; padding: 8px 16px; font-size: 15px; }
   .rate-row .btn-ghost { min-height: 44px; min-width: 50px; }
-  .rate-note { font-size: 12px; }
-  .ocv-note { font-size: 12px; }
+  .rate-note { font-size: 14px; }
+  .ocv-note { font-size: 14px; }
   .advanced summary { min-height: 44px; display: flex; align-items: center; }
   .advanced .switch { min-height: 44px; align-items: center; }
   .advanced input[type='checkbox'] { width: 20px; height: 20px; }
   .readouts .ro {
-    i { font-size: 12px; }
-    u { font-size: 12px; } }
+    i { font-size: 14px; }
+    u { font-size: 14px; } }
 }
 </style>

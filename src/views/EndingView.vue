@@ -2,12 +2,17 @@
   <div class="page-full ending">
     <header class="head">
       <p class="chapter-eyebrow">Chapter 07 · 预测任务</p>
-      <h2 class="chapter-title">如果让 AI 预测一块电池，它会经历什么？</h2>
-      <p class="chapter-sub">只把 B0005 前 <b class="num">80</b> 次实测记录交给模型，再用后续实测记录检验它是否猜对。</p>
-      <span class="corner badge-line"><DataBadge type="model" text="可解释基线输出" />真实历史输入 · 非 PINN 结果</span>
+      <h2 class="chapter-title">这块电池，还能陪你多久？</h2>
+      <p class="chapter-sub">配置自己的电池，或用 NASA 实测记录跑一次预测。</p>
+      <span class="corner badge-line"><DataBadge type="model" :text="predictionMode === 'manual' ? '容量趋势估算' : '可解释基线输出'" />{{ predictionMode === 'manual' ? '手动参数 · 两次容量测量' : 'NASA 真实历史输入' }}</span>
     </header>
 
-    <div class="task">
+    <div class="prediction-modes" role="group" aria-label="预测模式">
+      <button class="btn-ghost" :class="{ chosen: predictionMode === 'manual' }" @click="predictionMode = 'manual'">手动配置电池</button>
+      <button class="btn-ghost" :class="{ chosen: predictionMode === 'nasa' }" @click="predictionMode = 'nasa'">NASA 实测回测</button>
+    </div>
+    <ManualBattery v-if="predictionMode === 'manual'" />
+    <div v-show="predictionMode === 'nasa'" class="task">
       <div class="steps">
         <div v-for="(s, i) in steps" :key="i" class="step card-panel" :class="{ active: done >= i, current: done === i }"
           role="button" :tabindex="!running && i <= done ? 0 : -1" :aria-disabled="running || i > done"
@@ -92,14 +97,15 @@
       </div>
     </div>
 
-    <VideoSlot id="ch07-holdout" />
-    <ChapterGoals :chapter="7" />
+    <VideoSlot v-if="predictionMode === 'nasa'" id="ch07-holdout" />
+    <ChapterGoals v-if="predictionMode === 'nasa'" :chapter="7" />
 
     <ChapterFooter conclusion="预测不是魔法，而是一步步从数据到规律的过程——这就是我们正在做的事。" />
   </div>
 </template>
 
 <script setup>
+import ManualBattery from '../components/ManualBattery.vue'
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { initChart } from '../services/charts.js'
 import { loadBattery } from '../data/index.js'
@@ -118,6 +124,8 @@ const steps = [
   { name: '推演未来', input: '真实历史 + 基线模型', doing: '外推未来 SOH，并让残差区间随预测距离展宽', output: 'SOH 预测曲线 + 基线区间' },
   { name: '判断寿命', input: '预测曲线 + 阈值', doing: '曲线与 SOH 80% 参考线相交', output: 'EOL 循环数 → RUL' }
 ]
+const predictionMode = ref('manual')
+
 const concepts = ['外形与材料', '离子与电子', '老化痕迹', '真实曲线', '寿命预测']
 
 const done = ref(-1)       // 已完成的步骤索引（-1 = 未开始）
@@ -225,7 +233,7 @@ onBeforeUnmount(() => { reset(); window.removeEventListener('resize', onChartRes
 <style scoped lang="scss">
 .ending { display: flex; flex-direction: column; gap: 22px; }
 .head { position: relative;
-  .corner { position: absolute; right: 0; top: 8px; display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
+  .corner { position: absolute; right: 0; top: 8px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-2); }
 }
 .task { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; align-items: start; }
 .steps { display: flex; flex-direction: column; gap: 10px; }
@@ -241,7 +249,7 @@ onBeforeUnmount(() => { reset(); window.removeEventListener('resize', onChartRes
   transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
   .step-num { font-size: 22px; color: var(--text-3); }
   .step-body { flex: 1;
-    b { font-size: 15px; color: var(--text-2); }
+    b { font-size: 17px; color: var(--text-2); }
   }
   &.active {
     border-style: solid; border-color: rgba(77, 168, 255, 0.35);
@@ -251,8 +259,8 @@ onBeforeUnmount(() => { reset(); window.removeEventListener('resize', onChartRes
   &.current { border-color: rgba(77, 168, 255, 0.5); box-shadow: var(--glow-blue); }
   &:not(.active) { cursor: default; }
   .step-detail { margin-top: 8px; display: flex; flex-direction: column; gap: 5px;
-    p { font-size: 12.5px; color: var(--text-2); line-height: 1.65;
-      i { font-style: normal; display: inline-block; min-width: 38px; color: var(--cyan); font-size: 11.5px; margin-right: 8px; }
+    p { font-size: 14.5px; color: var(--text-2); line-height: 1.65;
+      i { font-style: normal; display: inline-block; min-width: 38px; color: var(--cyan); font-size: 14px; margin-right: 8px; }
     }
   }
   .ok { color: var(--green); font-size: 16px; }
@@ -264,45 +272,45 @@ onBeforeUnmount(() => { reset(); window.removeEventListener('resize', onChartRes
     &::before { content: ''; position: absolute; top: -7px; left: 12px; right: 12px; height: 7px; border: 2px solid rgba(77,168,255,0.55); border-bottom: none; border-radius: 4px 4px 0 0; }
     .ic-liquid { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(34,211,238,0.75), rgba(77,168,255,0.5)); transition: height 0.8s ease; box-shadow: 0 0 12px rgba(34,211,238,0.4); }
   }
-  .idle-meta { b { font-size: 19px; color: var(--text-1); } p { font-size: 12.5px; color: var(--text-2); margin-top: 4px; .cyan { color: var(--cyan); } } }
+  .idle-meta { b { font-size: 19px; color: var(--text-1); } p { font-size: 14.5px; color: var(--text-2); margin-top: 4px; .cyan { color: var(--cyan); } } }
   .idle-progress {
     display: flex; align-items: baseline; gap: 10px;
     padding: 9px 12px; border: 1px solid var(--hairline); border-radius: 8px;
     background: rgba(77, 168, 255, 0.06);
-    .ip-count { font-size: 13px; color: var(--cyan); letter-spacing: 0.04em; }
-    b { font-size: 13.5px; color: var(--text-1); font-weight: 600; }
+    .ip-count { font-size: 15px; color: var(--cyan); letter-spacing: 0.04em; }
+    b { font-size: 15.5px; color: var(--text-1); font-weight: 600; }
   }
-  .idle-hint { margin-top: 14px; font-size: 12px; color: var(--blue); text-align: center; }
+  .idle-hint { margin-top: 14px; font-size: 14px; color: var(--blue); text-align: center; }
 }
-.run-btn { justify-content: center; font-size: 15.5px; &:disabled { opacity: 0.55; cursor: default; transform: none; } }
+.run-btn { justify-content: center; font-size: 17.5px; &:disabled { opacity: 0.55; cursor: default; transform: none; } }
 .reset-btn { align-self: flex-start; }
-.error-message { padding: 10px 14px; border: 1px solid rgba(239,68,68,0.45); border-radius: 9px; color: #fecaca; background: rgba(239,68,68,0.08); font-size: 12.5px; }
+.error-message { padding: 10px 14px; border: 1px solid rgba(239,68,68,0.45); border-radius: 9px; color: #fecaca; background: rgba(239,68,68,0.08); font-size: 14.5px; }
 .result { padding: 20px;
-  h4 { color: var(--cyan); font-size: 15px; margin-bottom: 14px; }
+  h4 { color: var(--cyan); font-size: 17px; margin-bottom: 14px; }
 }
 .big-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;
   .bn { text-align: center; padding: 12px 6px; background: rgba(20,27,46,0.6); border: 1px solid var(--hairline); border-radius: 10px;
-    i { display: block; font-style: normal; font-size: 11px; color: var(--text-2); }
+    i { display: block; font-style: normal; font-size: 14px; color: var(--text-2); }
     b { font-size: 24px; color: var(--cyan); }
-    u { display: block; text-decoration: none; font-size: 10.5px; color: var(--text-3); }
+    u { display: block; text-decoration: none; font-size: 14px; color: var(--text-3); }
     &.main { border-color: rgba(34,211,238,0.5); box-shadow: 0 0 18px rgba(34,211,238,0.18);
       b { font-size: 30px; color: #7df3ff; } }
   }
 }
 .backtest { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px;
-  span { flex: 1; min-width: 126px; padding: 7px 10px; border: 1px solid rgba(77,168,255,0.24); border-radius: 8px; color: var(--text-2); font-size: 11px; text-align: center; background: rgba(77,168,255,0.05); }
+  span { flex: 1; min-width: 126px; padding: 7px 10px; border: 1px solid rgba(77,168,255,0.24); border-radius: 8px; color: var(--text-2); font-size: 14px; text-align: center; background: rgba(77,168,255,0.05); }
   b { color: #7dd8f5; }
 }
-.holdout-note { color: var(--text-3); font-size: 11px; margin-bottom: 8px; }
+.holdout-note { color: var(--text-3); font-size: 14px; margin-bottom: 8px; }
 .chart { height: 270px; }
 .explain { margin: 14px 0 10px; padding-left: 18px;
-  li { font-size: 12.5px; color: var(--text-2); line-height: 1.9; b { color: var(--text-1); } }
+  li { font-size: 14.5px; color: var(--text-2); line-height: 1.9; b { color: var(--text-1); } }
 }
-.verdict { font-size: 11.5px; color: var(--amber); }
+.verdict { font-size: 14px; color: var(--amber); }
 .lookback { padding: 20px; text-align: center;
-  .lb-chip { display: inline-block; margin: 4px; padding: 7px 18px; border: 1px solid var(--hairline-strong); border-radius: 999px; font-size: 13px; color: #bfe3ff; animation: chipIn 0.6s ease backwards; box-shadow: 0 0 14px rgba(77,168,255,0.12); }
-  .final { margin-top: 16px; font-size: 15.5px; color: var(--text-1); line-height: 1.9; }
-  .research { margin-top: 8px; font-size: 12.5px; color: var(--text-2); }
+  .lb-chip { display: inline-block; margin: 4px; padding: 7px 18px; border: 1px solid var(--hairline-strong); border-radius: 999px; font-size: 15px; color: #bfe3ff; animation: chipIn 0.6s ease backwards; box-shadow: 0 0 14px rgba(77,168,255,0.12); }
+  .final { margin-top: 16px; font-size: 17.5px; color: var(--text-1); line-height: 1.9; }
+  .research { margin-top: 8px; font-size: 14.5px; color: var(--text-2); }
 }
 @keyframes chipIn { from { opacity: 0; transform: translateY(12px) scale(0.92); } }
 @media (max-width: 1080px) {
@@ -313,7 +321,9 @@ onBeforeUnmount(() => { reset(); window.removeEventListener('resize', onChartRes
   .chart { height: 300px; }
   .btn-ghost { min-height: 44px; }
   .btn-primary { min-height: 48px; }
-  .big-nums .bn u { font-size: 12px; }
-  .corner, .holdout-note, .verdict { font-size: 12px; }
+  .big-nums .bn u { font-size: 14px; }
+  .corner, .holdout-note, .verdict { font-size: 14px; }
 }
 </style>
+
+<style>.prediction-modes { display: flex; flex-wrap: wrap; gap: 12px; } .prediction-modes .chosen { color: var(--cyan); border-color: var(--cyan); background: #22d3ee12; } .ending .head .corner { position: static; margin-top: 12px; }</style>

@@ -36,27 +36,33 @@ const goal = computed(() => chapterGoals.find((g) => g.n === props.chapter) || n
 }
 .cg-head {
   display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px;
-  .cg-label { font-size: 12px; letter-spacing: 0.22em; color: var(--cyan); }
-  .cg-meta { font-size: 11px; color: var(--text-3); }
+  .cg-label { font-size: 14px; letter-spacing: 0.22em; color: var(--cyan); }
+  .cg-meta { font-size: 14px; color: var(--text-3); }
 }
 .cg-list {
   display: flex; flex-direction: column; gap: 8px; list-style: none;
   li {
     display: flex; align-items: flex-start; gap: 9px;
-    font-size: 13.5px; color: var(--text-2); line-height: 1.7;
+    font-size: 15.5px; color: var(--text-2); line-height: 1.7;
   }
   .cg-check { flex: 0 0 auto; margin-top: 3px; color: var(--green); display: inline-flex; }
 }
 .cg-plain {
   margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--hairline);
-  font-size: 13px; color: var(--text-3); line-height: 1.75;
-  i { font-style: normal; margin-right: 8px; color: var(--blue); font-size: 11.5px; letter-spacing: 0.06em; }
+  font-size: 15px; color: var(--text-3); line-height: 1.75;
+  i { font-style: normal; margin-right: 8px; color: var(--blue); font-size: 14px; letter-spacing: 0.06em; }
 }
 
 @media (max-width: 767px) {
   .chapter-goals { padding: 16px 16px 18px; margin-bottom: 20px; }
-  .cg-head .cg-label { font-size: 12px; letter-spacing: 0.16em; }
-  .cg-list li { font-size: 13px; }
-  .cg-plain { font-size: 12.5px; }
+  .cg-head .cg-label { font-size: 14px; letter-spacing: 0.16em; }
+  .cg-list li { font-size: 15px; }
+  .cg-plain { font-size: 14.5px; }
 }
+
+.chapter-goals { padding: 26px 28px; }
+.cg-head .cg-label { font-size: 20px; letter-spacing: .08em; font-weight: 600; }
+.cg-list li { font-size: 17px; line-height: 1.9; }
+.cg-plain { font-size: 16px; } .cg-plain i { font-size: 16px; }
+@media(max-width:767px) { .cg-head { flex-wrap: wrap; } .cg-head .cg-label { font-size: 18px; } .cg-list li { font-size: 16px; } }
 </style>

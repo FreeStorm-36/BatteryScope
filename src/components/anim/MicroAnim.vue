@@ -73,10 +73,10 @@ function onSeek(e) {
   .ma-tag {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 3px 10px; border: 1px solid rgba(52, 211, 153, 0.42); border-radius: 999px;
-    color: var(--green); font-size: 11px; letter-spacing: 0.06em;
+    color: var(--green); font-size: 14px; letter-spacing: 0.06em;
   }
-  b { font-size: 14.5px; font-weight: 600; color: var(--text-1); }
-  .ma-dur { margin-left: auto; font-size: 11.5px; color: var(--text-3); }
+  b { font-size: 16.5px; font-weight: 600; color: var(--text-1); }
+  .ma-dur { margin-left: auto; font-size: 14px; color: var(--text-3); }
 }
 
 .ma-stage {
@@ -99,25 +99,25 @@ function onSeek(e) {
     &:hover { background: rgba(77, 168, 255, 0.16); color: #9fd0ff; }
   }
   .ma-seek { flex: 1; min-width: 0; height: 22px; cursor: pointer; }
-  .ma-pct { flex: 0 0 auto; width: 40px; text-align: right; font-size: 11.5px; color: var(--text-3); }
+  .ma-pct { flex: 0 0 auto; width: 40px; text-align: right; font-size: 14px; color: var(--text-3); }
 }
 
 .ma-legend {
   display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; list-style: none;
-  li { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--text-2);
+  li { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; color: var(--text-2);
     i { width: 14px; height: 3px; border-radius: 2px; }
   }
 }
 
 .ma-basis, .ma-note {
-  margin-top: 8px; font-size: 12px; color: var(--text-2); line-height: 1.72;
-  i { display: inline-block; min-width: 34px; margin-right: 8px; font-style: normal; color: var(--blue); font-size: 11.5px; }
+  margin-top: 8px; font-size: 14px; color: var(--text-2); line-height: 1.72;
+  i { display: inline-block; min-width: 34px; margin-right: 8px; font-style: normal; color: var(--blue); font-size: 14px; }
 }
 .ma-note i { color: var(--cyan); }
 
 @media (max-width: 767px) {
   .micro-anim { padding: 14px; }
-  .ma-head b { font-size: 14px; }
+  .ma-head b { font-size: 16px; }
   .ma-stage { aspect-ratio: auto; height: 280px; }
   /* ⚠️ 必须写成 `.ma-bar .ma-btn` 两层：上面 `.ma-bar { .ma-btn {} }` 编译后是
      `.ma-bar .ma-btn[data-v-x]`（三层），这里若只写 `.ma-btn[data-v-x]` 特异性更低，
@@ -126,6 +126,6 @@ function onSeek(e) {
     .ma-btn { width: 44px; height: 44px; }
     .ma-seek { height: 44px; }
   }
-  .ma-basis, .ma-note { font-size: 12px; }
+  .ma-basis, .ma-note { font-size: 14px; }
 }
 </style>

@@ -5,10 +5,7 @@
     <div class="nav-row">
       <router-link to="/" class="brand" aria-label="返回 BatteryScope 首页">
         <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 32 32" role="img">
-            <rect x="8" y="5" width="16" height="22" rx="7" />
-            <path d="M13 3h6M12 11h8M12 16h8M12 21h5" />
-          </svg>
+          <img :src="logoUrl" alt="" class="brand-logo" />
         </span>
         <span><b>BatteryScope</b><i>锂电池生命观察站</i></span>
       </router-link>
@@ -123,6 +120,7 @@
 </template>
 
 <script setup>
+const logoUrl = `${import.meta.env.BASE_URL}batteryscope-logo.png`
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { chapters } from '../stores/tour.js'
@@ -174,16 +172,16 @@ useDialog(sheetOpen, csPanel, { trap: true, lockScroll: true })
     background: rgba(77, 168, 255, 0.09);
   }
   svg { width: 23px; fill: none; stroke: var(--blue); stroke-width: 1.6; stroke-linecap: round; }
-  b { display: block; font-size: 15px; letter-spacing: 0.025em; }
-  i { display: block; color: var(--text-3); font-size: 10.5px; font-style: normal; letter-spacing: 0.08em; }
+  b { display: block; font-size: 17px; letter-spacing: 0.025em; }
+  i { display: block; color: var(--text-3); font-size: 14px; font-style: normal; letter-spacing: 0.08em; }
 }
 .chapter-links { display: flex; align-items: center; gap: 2px; }
 .chapter-link {
   position: relative; display: inline-flex; align-items: baseline; gap: 5px;
   padding: 10px 11px; color: var(--text-3); text-decoration: none; border-radius: 9px;
   transition: color 0.2s ease, background 0.2s ease;
-  .num { font-size: 9px; opacity: 0.7; }
-  b { font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+  .num { font-size: 14px; opacity: 0.7; }
+  b { font-size: 14.5px; font-weight: 500; white-space: nowrap; }
   &::after {
     content: ''; position: absolute; left: 12px; right: 12px; bottom: 4px; height: 1px;
     background: var(--blue); transform: scaleX(0); transition: transform 0.22s ease;
@@ -197,9 +195,9 @@ useDialog(sheetOpen, csPanel, { trap: true, lockScroll: true })
   justify-self: end; display: flex; align-items: center; gap: 9px;
   .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 7px rgba(34,211,238,.6); }
   .status-copy { min-width: 0; }
-  i { display: block; color: var(--text-3); font-size: 9.5px; line-height: 1.1; font-style: normal; }
-  b { display: block; max-width: 150px; color: var(--text-2); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .counter { padding: 4px 8px; border: 1px solid var(--hairline); border-radius: 999px; color: var(--cyan); font-size: 10.5px; }
+  i { display: block; color: var(--text-3); font-size: 14px; line-height: 1.1; font-style: normal; }
+  b { display: block; max-width: 150px; color: var(--text-2); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .counter { padding: 4px 8px; border: 1px solid var(--hairline); border-radius: 999px; color: var(--cyan); font-size: 14px; }
 }
 .energy-rail {
   position: relative; width: min(1380px, calc(100% - 48px)); height: 10px; margin: 0 auto;
@@ -245,8 +243,8 @@ useDialog(sheetOpen, csPanel, { trap: true, lockScroll: true })
   color: var(--text-1); font: inherit; cursor: pointer;
   transition: background 0.18s ease;
   &:active { background: rgba(77, 168, 255, 0.2); }
-  .nc-num { font-size: 12px; color: var(--cyan); }
-  b { font-size: 14px; font-weight: 500; white-space: nowrap; }
+  .nc-num { font-size: 14px; color: var(--cyan); }
+  b { font-size: 16px; font-weight: 500; white-space: nowrap; }
   svg { color: var(--text-3); flex: 0 0 auto; }
 }
 
@@ -269,7 +267,7 @@ useDialog(sheetOpen, csPanel, { trap: true, lockScroll: true })
 .cs-head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   margin-bottom: 14px; padding: 0 4px;
-  span i { display: block; font-style: normal; font-size: 12px; color: var(--text-3); }
+  span i { display: block; font-style: normal; font-size: 14px; color: var(--text-3); }
   span b { display: block; margin-top: 3px; font-size: 16px; font-weight: 500; color: var(--text-1); }
 }
 .cs-close {
@@ -284,13 +282,13 @@ useDialog(sheetOpen, csPanel, { trap: true, lockScroll: true })
   min-height: 58px; padding: 10px 14px;
   border: 1px solid transparent; border-radius: 12px;
   color: var(--text-2); text-decoration: none;
-  .cs-num { flex: 0 0 20px; font-size: 13px; color: var(--text-3); }
+  .cs-num { flex: 0 0 20px; font-size: 15px; color: var(--text-3); }
   .cs-body {
     flex: 1; min-width: 0;
-    b { display: block; font-size: 15px; font-weight: 500; color: var(--text-1); }
-    i { display: block; margin-top: 3px; font-style: normal; font-size: 12.5px; color: var(--text-3); }
+    b { display: block; font-size: 17px; font-weight: 500; color: var(--text-1); }
+    i { display: block; margin-top: 3px; font-style: normal; font-size: 14.5px; color: var(--text-3); }
   }
-  .cs-dur { flex: 0 0 auto; font-size: 12px; color: var(--text-3); }
+  .cs-dur { flex: 0 0 auto; font-size: 14px; color: var(--text-3); }
   &.done .cs-num { color: var(--blue); }
   &.active { border-color: rgba(77, 168, 255, 0.5); background: rgba(77, 168, 255, 0.1); }
 }
@@ -311,4 +309,11 @@ useDialog(sheetOpen, csPanel, { trap: true, lockScroll: true })
   .nav-compact { display: flex; }
   .energy-rail { width: calc(100% - 28px); }
 }
+</style>
+
+<style>.brand-mark .brand-logo { width: 46px; height: 46px; object-fit: contain; } .brand-mark { background: transparent !important; border: none !important; } @media(max-width:1100px) and (min-width:768px) { .nav-status { display: none !important; } }</style>
+
+<style>
+@media(min-width:768px) and (max-width:1250px) { .nav-row { grid-template-columns: 210px 1fr; gap: 15px; } .nav-status { display: none; } .chapter-links { justify-self: end; } .chapter-link { padding: 10px 7px; } }
+@media(min-width:768px) and (max-width:960px) { .chapter-link .num { display: none; } .chapter-link { padding: 10px 8px; } }
 </style>

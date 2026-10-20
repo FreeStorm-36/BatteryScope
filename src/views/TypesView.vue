@@ -822,15 +822,15 @@ onBeforeUnmount(() => {
   --stage-h: clamp(360px, calc(100vh - 300px), 530px);
 }
 .head { position: relative;
-  .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
+  .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-2); }
 }
 .showcase { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; align-items: start; }
 
 /* ── 右侧「数字展柜」目录栏（仅非全屏） ── */
 .drawer { padding: 18px 20px; height: var(--stage-h); display: flex; flex-direction: column; overflow-y: auto; }
 .drawer-head {
-  .idle-title { font-size: 13px; letter-spacing: 0.2em; color: var(--blue); margin-bottom: 8px; }
-  .idle-line { font-size: 13.5px; color: var(--text-2); line-height: 1.7; }
+  .idle-title { font-size: 15px; letter-spacing: 0.2em; color: var(--blue); margin-bottom: 8px; }
+  .idle-line { font-size: 15.5px; color: var(--text-2); line-height: 1.7; }
 }
 .idle-parts {
   display: flex; flex-direction: column; gap: 7px; margin-top: 16px;
@@ -838,7 +838,7 @@ onBeforeUnmount(() => {
   .hp-btn {
     display: flex; align-items: center; gap: 10px; width: 100%;
     padding: 8px 12px; border: 1px dashed var(--hairline); border-radius: 8px;
-    background: transparent; color: var(--text-2); font: inherit; font-size: 13px;
+    background: transparent; color: var(--text-2); font: inherit; font-size: 15px;
     text-align: left; cursor: pointer; transition: all 0.2s ease;
     &:hover { color: var(--text-1); border-color: var(--hairline-strong); background: rgba(77, 168, 255, 0.08); }
     .hdot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
@@ -851,13 +851,13 @@ onBeforeUnmount(() => {
     flex: 0 0 auto; width: 26px; height: 26px; display: grid; place-items: center;
     border: 1px solid var(--hairline); border-radius: 7px;
     background: rgba(77, 168, 255, 0.07); color: var(--text-2);
-    font: inherit; font-size: 13px; line-height: 1; cursor: pointer;
+    font: inherit; font-size: 15px; line-height: 1; cursor: pointer;
     &:hover { color: #eaf6ff; border-color: var(--hairline-strong); }
   }
   dl { display: grid; grid-template-columns: 82px 1fr; gap: 12px 10px;
-    dt { font-size: 12px; color: var(--blue); padding-top: 2px; }
-    dd { font-size: 13.5px; color: var(--text-1); line-height: 1.75; } }
-  .oneline { margin-top: 16px; padding: 10px 14px; background: rgba(34,211,238,0.07); border-left: 3px solid var(--cyan); border-radius: 6px; font-size: 13px; color: #bfe9ff; line-height: 1.7; }
+    dt { font-size: 14px; color: var(--blue); padding-top: 2px; }
+    dd { font-size: 15.5px; color: var(--text-1); line-height: 1.75; } }
+  .oneline { margin-top: 16px; padding: 10px 14px; background: rgba(34,211,238,0.07); border-left: 3px solid var(--cyan); border-radius: 6px; font-size: 15px; color: #bfe9ff; line-height: 1.7; }
 }
 .stage-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .stage { position: relative; height: var(--stage-h); overflow: hidden; min-width: 0; }
@@ -896,9 +896,9 @@ onBeforeUnmount(() => {
 .shape-row { position: absolute; left: 16px; bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; z-index: 4; }
 .stage-tools { position: absolute; right: 16px; top: 14px; z-index: 4;
   display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-.size-tag { font-size: 12px; color: var(--text-2); padding: 6px 12px; }
-.view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; }
-.view-hint { font-size: 11.5px; color: var(--text-3); letter-spacing: 0.02em;
+.size-tag { font-size: 14px; color: var(--text-2); padding: 6px 12px; }
+.view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; padding: 6px 12px; }
+.view-hint { font-size: 14px; color: var(--text-3); letter-spacing: 0.02em;
   .vh-touch { display: none; } }
 // 拆解控制条：位于舞台下方，是常规文档流的一行，不再遮挡 3D 画面
 .teardown {
@@ -908,8 +908,8 @@ onBeforeUnmount(() => {
   // 这两个按钮实际吃到的是 .btn-ghost 的通用内边距（8px 18px），
   // 图标两侧一大圈留白，和紧挨着的滑杆不成一体。
   .icon { width: 32px; height: 32px; flex: none; justify-content: center; padding: 0; }
-  .td-step { font-size: 12px; color: var(--cyan); white-space: nowrap; }
-  .td-caption { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .td-step { font-size: 14px; color: var(--cyan); white-space: nowrap; }
+  .td-caption { font-size: 14px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 .back-btn { position: absolute; right: 16px; bottom: 16px; z-index: 4; }
 
@@ -931,23 +931,23 @@ onBeforeUnmount(() => {
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
   pointer-events: auto;
   .pf-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
-  h4 { flex: 1; font-size: 15.5px; color: var(--cyan); line-height: 1.4; }
+  h4 { flex: 1; font-size: 17.5px; color: var(--cyan); line-height: 1.4; }
   .pf-nav { display: flex; gap: 4px; flex: 0 0 auto; }
   .pf-btn {
     width: 26px; height: 26px; display: grid; place-items: center;
     border: 1px solid var(--hairline); border-radius: 7px;
     background: rgba(77, 168, 255, 0.07); color: var(--text-2);
-    font: inherit; font-size: 14px; line-height: 1; cursor: pointer;
+    font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
     transition: all 0.18s ease;
     &:hover { color: #eaf6ff; border-color: var(--hairline-strong); background: rgba(77, 168, 255, 0.18); }
   }
   dl { display: grid; grid-template-columns: 64px 1fr; gap: 9px 10px;
-    dt { font-size: 11.5px; color: var(--blue); padding-top: 2px; }
-    dd { font-size: 12.5px; color: var(--text-1); line-height: 1.7; } }
+    dt { font-size: 14px; color: var(--blue); padding-top: 2px; }
+    dd { font-size: 14.5px; color: var(--text-1); line-height: 1.7; } }
   .pf-oneline {
     margin-top: 12px; padding: 8px 11px;
     background: rgba(34, 211, 238, 0.07); border-left: 3px solid var(--cyan); border-radius: 6px;
-    font-size: 12px; color: #bfe9ff; line-height: 1.65;
+    font-size: 14px; color: #bfe9ff; line-height: 1.65;
   }
 }
 @media (max-width: 767px) {
@@ -962,20 +962,20 @@ onBeforeUnmount(() => {
 .chem { padding: 22px; }
 .chem-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
   h3 { font-size: 16px; color: var(--text-1); }
-  .hint { font-size: 12px; color: var(--text-3); } }
+  .hint { font-size: 14px; color: var(--text-3); } }
 .chem-body { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
 .chem-info {
   .chem-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
   h4 { font-size: 16.5px; color: var(--text-1); }
-  .make { font-size: 12px; color: var(--blue); margin: 4px 0 12px; }
-  .metaphor { font-size: 13.5px; color: #bfe9ff; line-height: 1.8; padding: 10px 14px; background: rgba(77,168,255,0.06); border-left: 3px solid var(--blue); border-radius: 6px; }
-  .why { font-size: 13px; color: var(--text-2); line-height: 1.85; margin-top: 12px; }
-  .apps { font-size: 12.5px; color: var(--text-2); margin-top: 10px; b { color: var(--text-1); } }
-  .compare-row { margin-top: 16px; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-3); flex-wrap: wrap;
-    .sm { padding: 4px 12px; font-size: 12px; } }
+  .make { font-size: 14px; color: var(--blue); margin: 4px 0 12px; }
+  .metaphor { font-size: 15.5px; color: #bfe9ff; line-height: 1.8; padding: 10px 14px; background: rgba(77,168,255,0.06); border-left: 3px solid var(--blue); border-radius: 6px; }
+  .why { font-size: 15px; color: var(--text-2); line-height: 1.85; margin-top: 12px; }
+  .apps { font-size: 14.5px; color: var(--text-2); margin-top: 10px; b { color: var(--text-1); } }
+  .compare-row { margin-top: 16px; display: flex; align-items: center; gap: 8px; font-size: 14.5px; color: var(--text-3); flex-wrap: wrap;
+    .sm { padding: 4px 12px; font-size: 14px; } }
 }
 .radar-box { .radar { height: 300px; }
-  .caliber { margin-top: 8px; font-size: 11.5px; color: var(--text-3); text-align: center; } }
+  .caliber { margin-top: 8px; font-size: 14px; color: var(--text-3); text-align: center; } }
 
 /* 平板 / 窄笔记本：双栏塌成单栏。舞台仍是"画布铺满 + 浮层绝对定位"的桌面思路 */
 @media (max-width: 1080px) {
@@ -1007,15 +1007,15 @@ onBeforeUnmount(() => {
     flex-direction: row; flex-wrap: wrap; align-items: center;
     justify-content: space-between; gap: 8px;
   }
-  .size-tag { font-size: 12.5px; padding: 8px 13px; }
-  .view-reset { min-height: 44px; padding: 8px 14px; font-size: 12.5px; }
-  .view-hint { display: block; flex-basis: 100%; font-size: 12px;
+  .size-tag { font-size: 14.5px; padding: 8px 13px; }
+  .view-reset { min-height: 44px; padding: 8px 14px; font-size: 14.5px; }
+  .view-hint { display: block; flex-basis: 100%; font-size: 14px;
     .vh-mouse { display: none; }
     .vh-touch { display: inline; } }
 
   .shape-row {
     position: static; order: 3; width: 100%;
-    .btn-ghost { flex: 1; min-height: 46px; font-size: 13px; }
+    .btn-ghost { flex: 1; min-height: 46px; font-size: 15px; }
   }
   /* 桌面那个角落里的"返回整体"在手机上由卡片自带的「✕」取代 */
   .back-btn { display: none; }
@@ -1033,17 +1033,17 @@ onBeforeUnmount(() => {
 
   .teardown {
     .icon { width: 44px; height: 44px; }
-    .td-step { font-size: 12.5px; }
-    .td-caption { font-size: 12.5px; }
+    .td-step { font-size: 14.5px; }
+    .td-caption { font-size: 14.5px; }
   }
 
   /* 化学体系对比区：tab 与"加入对比"按钮原来只有 30—39px 高 */
   .chem { padding: 18px 16px; }
-  .chem-tabs .btn-ghost { min-height: 44px; padding: 8px 18px; font-size: 13px; }
+  .chem-tabs .btn-ghost { min-height: 44px; padding: 8px 18px; font-size: 15px; }
   .compare-row { flex-wrap: wrap;
     .btn-ghost { min-height: 44px; padding: 8px 16px; } }
-  .chem-info .caliber, .chem-head .hint { font-size: 12px; }
-  .badge-line { font-size: 12px; }
+  .chem-info .caliber, .chem-head .hint { font-size: 14px; }
+  .badge-line { font-size: 14px; }
 }
 
 @keyframes types-sheet-up {

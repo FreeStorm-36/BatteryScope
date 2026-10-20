@@ -1,16 +1,13 @@
 <template>
-  <main class="home">
+  <main class="home" @pointermove="onGlow">
     <canvas ref="bgCanvas" class="bg-canvas"></canvas>
     <div class="vignette"></div>
 
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">BATTERYSCOPE · LITHIUM LIFE EXPLORER</p>
-        <h1>看见一块电池<br /><span>从结构到寿命的一生</span></h1>
-        <p class="lead">
-          以同一块概念标本 <b>BS-01</b> 为主角，沿“结构—工作—老化—数据—模型—预测”
-          逐层理解锂离子电池，而不是只看一条结果曲线。
-        </p>
+        <h1>BatteryScope</h1>
+        <p class="hero-subtitle">看见一块电池，从结构到寿命的一生</p>
         <div class="hero-actions">
           <router-link to="/types" class="btn-primary cta">
             开始观察
@@ -55,11 +52,10 @@
             <div><dt>外形</dt><dd>圆柱 26650 · Φ26×65 mm</dd></div>
             <div><dt>化学体系</dt><dd>NMC · 概念设定</dd></div>
             <div><dt>状态</dt><dd class="healthy">健康观测</dd></div>
-            <div><dt>读数性质</dt><dd>演示数值 · 非实时测量</dd></div>
-            <div><dt>边界</dt><dd>非 NASA B0005 实体</dd></div>
+
           </dl>
         </aside>
-        <p class="stage-note">按住拖动可环视电芯 · 松手后继续缓缓回转 · 扫描标签用于教学演示</p>
+        <p class="stage-note">拖动，环视这块电池</p>
       </div>
     </section>
 
@@ -67,9 +63,9 @@
       <div class="section-head">
         <div>
           <p class="chapter-eyebrow">ONE OBJECT · FOUR QUESTIONS</p>
-          <h2>沿一条生命线，回答四个关键问题</h2>
+          <h2>一块电池，四次探索</h2>
         </div>
-        <p>从看得见的结构进入看不见的机制，最后回到可验证的数据与预测。</p>
+        
       </div>
       <div class="journey-grid">
         <router-link v-for="(item, i) in journey" :key="item.to" :to="item.to" class="journey-card">
@@ -79,14 +75,6 @@
           <p>{{ item.text }}</p>
           <b>{{ item.link }} <i>→</i></b>
         </router-link>
-      </div>
-      <div class="evidence-boundary">
-        <span class="boundary-mark">E</span>
-        <div>
-          <b>证据边界</b>
-          <p>BS-01 用于解释结构与机理；NASA B0005/B0006/B0007/B0018 用于真实数据分析；模型输出仅在完成实际计算后展示。</p>
-        </div>
-        <router-link to="/datalab">进入数据实验室 →</router-link>
       </div>
     </section>
 
@@ -133,22 +121,22 @@ const metrics = [
 const journey = [
   {
     to: '/types', title: '里面有什么？', link: '观察结构',
-    text: '拆解圆柱、方形与软包电芯，区分外形、内部层级与化学体系。',
+    text: '拆开电芯，发现能量的微观结构。',
     icon: '<svg viewBox="0 0 32 32"><rect x="9" y="5" width="14" height="22" rx="6"/><path d="M13 3h6M12 12h8M12 17h8M12 22h5"/></svg>'
   },
   {
     to: '/principle', title: '能量怎样流动？', link: '进入实验台',
-    text: '切换充电、放电、静置与开路状态，分别追踪 Li⁺ 与电子路径。',
+    text: '切换充放电，追踪离子与电子。',
     icon: '<svg viewBox="0 0 32 32"><path d="M6 19h7l3-12v18l4-12h6"/><circle cx="6" cy="19" r="2"/><circle cx="26" cy="13" r="2"/></svg>'
   },
   {
     to: '/aging', title: '为什么会衰老？', link: '观察损伤',
-    text: '把循环进度映射到 SEI、锂损失、裂纹与阻抗等多尺度机制。',
+    text: '拨动时间，看见每一处老化痕迹。',
     icon: '<svg viewBox="0 0 32 32"><path d="M6 22c4-8 7-4 10-10s6-2 10-7"/><path d="M7 26h19M10 9l4 4-3 4 5 4"/></svg>'
   },
   {
     to: '/prediction', title: '还能用多久？', link: '比较模型',
-    text: '在同一任务下比较经验、数据驱动与物理信息方法的输入与依据。',
+    text: '输入状态，探索下一段电池寿命。',
     icon: '<svg viewBox="0 0 32 32"><path d="M6 25V8m0 17h21"/><path d="m9 21 5-5 4 2 7-9"/><circle cx="25" cy="9" r="2"/></svg>'
   }
 ]
@@ -181,7 +169,7 @@ const fit = () => {
 onMounted(async () => {
   gsap.from('.home .eyebrow', { opacity: 0, y: 16, duration: 0.65, delay: 0.05 })
   gsap.from('.home h1', { opacity: 0, y: 28, duration: 0.85, delay: 0.18 })
-  gsap.from('.home .lead', { opacity: 0, y: 18, duration: 0.75, delay: 0.38 })
+  gsap.from('.home .hero-subtitle', { opacity: 0, y: 18, duration: 0.75, delay: 0.38 })
   gsap.from('.home .hero-actions', { opacity: 0, y: 14, duration: 0.65, delay: 0.55 })
   gsap.from('.home .hero-metrics > div', { opacity: 0, y: 14, duration: 0.55, stagger: 0.08, delay: 0.72 })
 
@@ -327,6 +315,12 @@ onMounted(async () => {
 
 })
 
+function onGlow(e) {
+  const el = e.currentTarget
+  el.style.setProperty("--pointer-x", `${e.clientX}px`)
+  el.style.setProperty("--pointer-y", `${e.clientY}px`)
+}
+
 function onParallax(e) {
   const r = stage.value.getBoundingClientRect()
   mouse.x = ((e.clientX - r.left) / r.width - 0.5) * 2
@@ -364,7 +358,7 @@ onBeforeUnmount(() => {
   gap: clamp(34px, 4.4vw, 72px); align-items: center;
 }
 .hero-copy { padding-top: 20px; }
-.eyebrow { color: var(--cyan); font-size: 11px; font-weight: 600; letter-spacing: .27em; }
+.eyebrow { color: var(--cyan); font-size: 14px; font-weight: 600; letter-spacing: .27em; }
 h1 {
   margin-top: 16px; color: var(--text-1); font-size: clamp(33px, 3.7vw, 52px); line-height: 1.24;
   letter-spacing: -.028em; font-weight: 700;
@@ -379,7 +373,7 @@ h1 {
 .data-link { padding: 12px 23px; color: var(--text-1); text-decoration: none; }
 .object-tag {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 13px; margin-top: 26px;
-  color: var(--text-3); font-size: 11.5px;
+  color: var(--text-3); font-size: 14px;
   b { color: var(--cyan); }
   span:not(.live-dot) { padding-left: 13px; border-left: 1px solid var(--hairline); }
 }
@@ -389,7 +383,7 @@ h1 {
   display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 38px; border-top: 1px solid var(--hairline);
   > div { padding: 18px 12px 0 0; }
   strong { display: block; color: var(--text-1); font-size: 23px; font-weight: 520; }
-  span { color: var(--text-3); font-size: 10.5px; letter-spacing: .04em; }
+  span { color: var(--text-3); font-size: 14px; letter-spacing: .04em; }
 }
 .observation-stage {
   position: relative; height: min(556px, 64vh); min-height: 452px; overflow: hidden;
@@ -406,9 +400,9 @@ h1 {
   position: absolute; z-index: 5; inset: 0 0 auto; height: 50px; padding: 0 20px;
   display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid var(--hairline); background: rgba(11, 16, 28, .74);
-  span { display: inline-flex; align-items: center; gap: 9px; color: var(--text-2); font-size: 12px; }
+  span { display: inline-flex; align-items: center; gap: 9px; color: var(--text-2); font-size: 14px; }
   span i { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); }
-  b { color: var(--text-3); font-size: 9.5px; font-weight: 500; letter-spacing: .1em; }
+  b { color: var(--text-3); font-size: 14px; font-weight: 500; letter-spacing: .1em; }
 }
 .stage-inner { position: absolute; inset: 50px 0 0; transition: transform .22s ease-out; }
 .three-box { position: absolute; inset: 0; cursor: grab; }
@@ -422,7 +416,7 @@ h1 {
 .scan-tags { position: absolute; inset: 0; pointer-events: none; }
 .scan-tag {
   position: absolute; padding: 4px 9px; border-left: 1px solid var(--cyan);
-  background: rgba(8, 13, 26, .6); color: #7dd8f5; font-size: 10px; letter-spacing: .04em;
+  background: rgba(8, 13, 26, .6); color: #7dd8f5; font-size: 14px; letter-spacing: .04em;
 }
 .scan-enter-active, .scan-leave-active { transition: all .4s ease; }
 .scan-enter-from, .scan-leave-to { opacity: 0; transform: translateY(6px); }
@@ -433,20 +427,20 @@ h1 {
 }
 .console-title {
   display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid var(--hairline);
-  span { color: var(--text-1); font-size: 11.5px; }
-  i { color: var(--text-3); font-size: 8.5px; font-style: normal; }
+  span { color: var(--text-1); font-size: 14px; }
+  i { color: var(--text-3); font-size: 14px; font-style: normal; }
 }
-.console dl div { display: flex; justify-content: space-between; gap: 16px; padding-top: 8px; font-size: 10.5px; }
+.console dl div { display: flex; justify-content: space-between; gap: 16px; padding-top: 8px; font-size: 14px; }
 .console dt { color: var(--text-3); }
 .console dd { color: var(--text-2); text-align: right; }
 .console .healthy { color: var(--green); }
-.stage-note { position: absolute; z-index: 6; left: 18px; bottom: 16px; color: var(--text-3); font-size: 9.5px; }
+.stage-note { position: absolute; z-index: 6; left: 18px; bottom: 16px; color: var(--text-3); font-size: 14px; }
 
 .journey { position: relative; z-index: 2; width: min(1240px, calc(100% - 80px)); margin: 70px auto 16px; }
 .section-head {
   display: flex; align-items: end; justify-content: space-between; gap: 40px; margin-bottom: 26px;
   h2 { font-size: clamp(28px, 3.2vw, 42px); line-height: 1.2; letter-spacing: -.025em; }
-  > p { max-width: 370px; color: var(--text-2); font-size: 13.5px; line-height: 1.8; }
+  > p { max-width: 370px; color: var(--text-2); font-size: 15.5px; line-height: 1.8; }
 }
 .journey-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--hairline); border-radius: 20px; overflow: hidden; }
 .journey-card {
@@ -455,21 +449,21 @@ h1 {
   transition: background .22s ease, transform .22s ease;
   &:last-child { border-right: 0; }
   &:hover { z-index: 2; background: rgba(24, 40, 68, .72); transform: translateY(-4px); }
-  .step { color: var(--text-3); font-size: 10px; }
+  .step { color: var(--text-3); font-size: 14px; }
   .card-icon { display: grid; place-items: center; width: 44px; height: 44px; margin: 30px 0 20px; border: 1px solid var(--hairline); border-radius: 13px; background: rgba(77,168,255,.07); }
   .card-icon :deep(svg) { width: 27px; fill: none; stroke: var(--blue); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
   h3 { margin-bottom: 9px; font-size: 17px; }
-  p { color: var(--text-2); font-size: 12.5px; line-height: 1.75; }
-  > b { position: absolute; left: 24px; bottom: 22px; color: var(--blue); font-size: 11px; font-weight: 500; }
+  p { color: var(--text-2); font-size: 14.5px; line-height: 1.75; }
+  > b { position: absolute; left: 24px; bottom: 22px; color: var(--blue); font-size: 14px; font-weight: 500; }
   > b i { margin-left: 4px; font-style: normal; }
 }
 .evidence-boundary {
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px; margin-top: 18px; padding: 17px 20px;
   border: 1px solid rgba(90, 150, 220, .2); border-radius: 14px; background: rgba(13, 19, 32, .65);
   .boundary-mark { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--blue); border-radius: 50%; color: var(--blue); font: 500 13px var(--mono); }
-  b { display: block; margin-bottom: 2px; font-size: 12px; }
-  p { color: var(--text-2); font-size: 11.5px; }
-  a { color: var(--blue); font-size: 11.5px; text-decoration: none; white-space: nowrap; }
+  b { display: block; margin-bottom: 2px; font-size: 14px; }
+  p { color: var(--text-2); font-size: 14px; }
+  a { color: var(--blue); font-size: 14px; text-decoration: none; white-space: nowrap; }
 }
 @media (max-width: 1080px) {
   .hero { grid-template-columns: 1fr; padding-top: 138px; }
@@ -495,6 +489,20 @@ h1 {
 
   /* 手机：几处 8.5—10.5px 的读数/说明文字基本读不出来，抬到 12px */
   .hero-metrics span, .stage-head b, .scan-tag, .console dl div,
-  .stage-note, .journey-card .step, .console-title i { font-size: 12px; }
+  .stage-note, .journey-card .step, .console-title i { font-size: 14px; }
 }
+
+.home::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(450px circle at var(--pointer-x, 30%) var(--pointer-y, 35%), #7452ff16, transparent 75%); }
+.vignette { background: radial-gradient(ellipse at 72% 30%, #2563eb25, transparent 55%), radial-gradient(ellipse at 12% 42%, #a855f71c, transparent 48%); animation: aurora 12s ease-in-out infinite alternate; }
+h1 { font-size: clamp(42px, 5.1vw, 76px); letter-spacing: -.06em; background: linear-gradient(105deg, #fff 12%, #b8eaff 55%, #b9a1ff); color: transparent; background-clip: text; line-height: 1.1; }
+.hero-subtitle { font-size: clamp(18px, 1.8vw, 25px); color: #b7c9e3; margin: 24px 0 36px; line-height: 1.7; }
+.observation-stage { transition: border-color .4s, box-shadow .4s; }
+.observation-stage:hover { border-color: #8f9fff80; box-shadow: 0 0 65px #7452ff20, 0 30px 70px #0005; }
+.journey-card:hover .card-icon { box-shadow: 0 0 28px #22d3ee30; transform: rotate(-7deg) scale(1.08); }
+.card-icon { transition: transform .3s, box-shadow .3s; }
+@keyframes aurora { to { opacity: .6; transform: scale(1.18) translateY(-3%); } }
+@media(prefers-reduced-motion: reduce) { .vignette, .scanline, .live-dot { animation: none; } }
+
+.console dt { white-space: nowrap; }
+.journey-card { padding-bottom: 58px; }
 </style>

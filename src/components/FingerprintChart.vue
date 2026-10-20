@@ -98,7 +98,7 @@ svg { display: block; width: 100%; height: auto; }
 .fp-axis { stroke-width: 1.4; opacity: 0.6; }
 .fp-area { fill: rgba(245, 158, 11, 0.16); stroke: #f59e0b; stroke-width: 2; stroke-linejoin: round; }
 .fp-dot { stroke: rgba(10, 14, 26, 0.9); stroke-width: 1; }
-.fp-label { font-size: 13px; }
+.fp-label { font-size: 15px; }
 .fp-hit { stroke: transparent; stroke-width: 15; cursor: pointer; }
 .fp-hit:focus-visible { stroke: rgba(34, 211, 238, 0.4); outline: none; }
 /* 窄屏：热区退化为装饰图形，不再拦截触摸（避免 <44px 的伪按钮） */

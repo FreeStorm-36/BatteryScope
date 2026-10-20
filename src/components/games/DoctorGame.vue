@@ -222,13 +222,13 @@ const doneLine = computed(() => {
   padding: 18px 20px;
   .g-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
     .g-title { display: flex; align-items: baseline; gap: 10px;
-      b { font-size: 15.5px; color: var(--text-1); }
-      i { font-style: normal; font-size: 12px; color: var(--text-3); } }
-    .g-stat { font-size: 12px; color: var(--cyan); } }
+      b { font-size: 17.5px; color: var(--text-1); }
+      i { font-style: normal; font-size: 14px; color: var(--text-3); } }
+    .g-stat { font-size: 14px; color: var(--cyan); } }
   .g-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; align-items: start; }
-  .g-caliber { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--hairline); font-size: 11px; color: var(--text-3); line-height: 1.7; }
+  .g-caliber { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--hairline); font-size: 14px; color: var(--text-3); line-height: 1.7; }
 }
-.g-badge { padding: 2px 9px; border: 1px solid rgba(34, 211, 238, 0.4); border-radius: 999px; font-size: 11px; color: var(--cyan); }
+.g-badge { padding: 2px 9px; border: 1px solid rgba(34, 211, 238, 0.4); border-radius: 999px; font-size: 14px; color: var(--cyan); }
 
 .gp-screen {
   border: 1px solid var(--hairline); border-radius: var(--radius-sm);
@@ -237,8 +237,8 @@ const doneLine = computed(() => {
 }
 .gv-bg { fill: rgba(20, 27, 46, 0.5); stroke: var(--hairline); }
 /* viewBox 180 宽渲染约 2 倍放大：9px ≈ 视觉 18px，8.5px ≈ 17px，保证长句完整不裁切 */
-.gv-tag { font-size: 9px; font-weight: 600; letter-spacing: 0.2px; }
-.gv-tag.dim { fill: var(--text-3); font-size: 8.5px; font-weight: 400; }
+.gv-tag { font-size: 14px; font-weight: 600; letter-spacing: 0.2px; }
+.gv-tag.dim { fill: var(--text-3); font-size: 14px; font-weight: 400; }
 
 /* 答题前隐藏机制标注（防剧透）；选择后无论对错都播讲解动画：
    标注淡入上移 → 引导线描画 → 关键形貌绿色脉冲两次 */
@@ -293,17 +293,17 @@ const doneLine = computed(() => {
 @keyframes gv-heat { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.9; } }
 
 /* 症状描述：加大加亮 + 琥珀底衬，读题是第一步 */
-.gp-case { margin-top: 12px; padding: 11px 13px; border: 1px solid rgba(247, 168, 61, 0.3); border-radius: 8px; background: rgba(247, 168, 61, 0.07); font-size: 14.5px; color: var(--text-1); line-height: 1.8;
-  i { font-style: normal; margin-right: 8px; padding: 1px 9px; border: 1px solid rgba(247, 168, 61, 0.45); border-radius: 999px; font-size: 12px; color: var(--amber); } }
+.gp-case { margin-top: 12px; padding: 11px 13px; border: 1px solid rgba(247, 168, 61, 0.3); border-radius: 8px; background: rgba(247, 168, 61, 0.07); font-size: 16.5px; color: var(--text-1); line-height: 1.8;
+  i { font-style: normal; margin-right: 8px; padding: 1px 9px; border: 1px solid rgba(247, 168, 61, 0.45); border-radius: 999px; font-size: 14px; color: var(--amber); } }
 
-.gp-q { font-size: 13px; color: var(--text-1); margin-bottom: 10px; }
+.gp-q { font-size: 15px; color: var(--text-1); margin-bottom: 10px; }
 .g-opt {
   display: flex; align-items: center; gap: 10px; text-align: left;
   width: 100%; min-height: 44px; margin-bottom: 8px; padding: 9px 13px;
   border: 1px solid var(--hairline); border-radius: 10px;
   background: rgba(19, 26, 43, 0.55); color: var(--text-2);
-  font-size: 12.5px; cursor: pointer; transition: all 0.2s ease;
-  .g-mark { flex: 0 0 auto; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 6px; background: rgba(77, 168, 255, 0.12); color: var(--blue); font-size: 11px; }
+  font-size: 14.5px; cursor: pointer; transition: all 0.2s ease;
+  .g-mark { flex: 0 0 auto; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 6px; background: rgba(77, 168, 255, 0.12); color: var(--blue); font-size: 14px; }
   &:not(:disabled):hover { border-color: var(--hairline-strong); color: var(--text-1); background: rgba(77, 168, 255, 0.08); }
   &:disabled { cursor: default; }
   &.right { border-color: rgba(52, 211, 153, 0.55); background: rgba(52, 211, 153, 0.1); color: #d8fbe8;
@@ -311,8 +311,8 @@ const doneLine = computed(() => {
   &.wrong { border-color: rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.09); color: #fbd5d5;
     .g-mark { background: rgba(239, 68, 68, 0.2); color: #fca5a5; } }
 }
-.g-fb { margin: 4px 0 12px; padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 12.5px; line-height: 1.85;
-  b { display: block; margin-bottom: 3px; font-size: 12.5px; }
+.g-fb { margin: 4px 0 12px; padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 14.5px; line-height: 1.85;
+  b { display: block; margin-bottom: 3px; font-size: 14.5px; }
   &.ok { border-left: 2px solid rgba(52, 211, 153, 0.55); background: rgba(52, 211, 153, 0.06); color: var(--text-2);
     b { color: #6ee7a0; } }
   &.no { border-left: 2px solid rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.05); color: var(--text-2);
@@ -321,8 +321,8 @@ const doneLine = computed(() => {
 
 .g-over { text-align: center; padding: 26px 20px;
   .go-score { font-size: 34px; color: var(--cyan); }
-  b { display: block; margin: 6px 0 8px; font-size: 15px; color: var(--text-1); }
-  p { font-size: 12.5px; color: var(--text-2); line-height: 1.8; max-width: 46ch; margin: 0 auto 16px; }
+  b { display: block; margin: 6px 0 8px; font-size: 17px; color: var(--text-1); }
+  p { font-size: 14.5px; color: var(--text-2); line-height: 1.8; max-width: 46ch; margin: 0 auto 16px; }
   .btn-primary { min-height: 44px; } }
 
 @media (max-width: 1080px) {
@@ -330,8 +330,8 @@ const doneLine = computed(() => {
 }
 @media (max-width: 767px) {
   .game { padding: 14px 16px; }
-  .g-opt { font-size: 13px; }
-  .gp-case { font-size: 13.5px; }
+  .g-opt { font-size: 15px; }
+  .gp-case { font-size: 15.5px; }
 }
 
 /* 动效可关闭 */

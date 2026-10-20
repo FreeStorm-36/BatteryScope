@@ -19,7 +19,7 @@ const label = computed(() => props.text || ({ real: '真实测量数据', concep
 .data-badge {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 12px; border-radius: 999px;
-  font-size: 11.5px; letter-spacing: 0.06em;
+  font-size: 14px; letter-spacing: 0.06em;
   border: 1px solid var(--hairline);
   &.real { color: #6ee7a0; border-color: rgba(52, 211, 153, 0.4); background: rgba(52, 211, 153, 0.07);
     .db-dot { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.8); } }

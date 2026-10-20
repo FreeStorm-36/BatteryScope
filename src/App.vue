@@ -1,5 +1,7 @@
 <template>
   <LifeTrackNav />
+  <button v-if="$route.path !== '/learn'" class="learning-fab" @click="openLibrary">学习空间 ↗</button>
+  <component v-if="Library && $route.path !== '/learn'" :is="Library" ref="libraryRef" embedded />
   <router-view v-slot="{ Component }">
     <transition name="fade-slide" mode="out-in">
       <component :is="Component" :key="$route.path" />
@@ -14,10 +16,17 @@
 </template>
 
 <script setup>
-import { inject, ref, watch } from 'vue'
+import { inject, ref, watch, shallowRef, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import LifeTrackNav from './components/LifeTrackNav.vue'
 
+const Library = shallowRef(null)
+const libraryRef = ref(null)
+async function openLibrary() {
+  if (!Library.value) Library.value = (await import('./views/LearningView.vue')).default
+  await nextTick()
+  libraryRef.value?.openSection(1)
+}
 const route = useRoute()
 const routeLoading = inject('routeLoading', ref(false))
 
@@ -80,4 +89,8 @@ watch(
 @media (prefers-reduced-motion: reduce) {
   .rp-sweep { animation: none; width: 100%; opacity: 0.55; }
 }
+
+.page-full > .head .corner { position: static; margin-top: 12px; display: flex; flex-wrap: wrap; }
 </style>
+
+<style>.learning-fab { position: fixed; z-index: 90; bottom: 24px; left: 24px; border: 1px solid #7a91ca77; border-radius: 999px; padding: 11px 20px; background: #121c32e8; backdrop-filter: blur(12px); color: #c3e9ff; text-decoration: none; font-size: 15px; cursor: pointer; box-shadow: 0 5px 25px #0005; } .learning-fab:hover { border-color: #22d3ee; box-shadow: 0 0 25px #22d3ee25; }</style>

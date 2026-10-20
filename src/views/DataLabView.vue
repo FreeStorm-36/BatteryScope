@@ -578,7 +578,7 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .datalab { display: flex; flex-direction: column; gap: 22px; }
 .head { position: relative;
-  .corner { position: absolute; right: 0; top: 8px; display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
+  .corner { position: absolute; right: 0; top: 8px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-2); }
   .corner > span { display: flex; align-items: center; gap: 9px; }
 }
 // ⚠️ 这两处底色原先是 rgba(0,7,6) / rgba(7,20,17) —— 绿黑色。
@@ -591,14 +591,14 @@ onBeforeUnmount(() => {
   .drawer-head { display: flex; align-items: start; justify-content: space-between; gap: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--hairline); }
   .drawer-head h3 { font-size: 22px; }
   dl > div { display: grid; grid-template-columns: 120px 1fr; gap: 18px; padding: 13px 0; border-bottom: 1px solid rgba(90,150,220,.14); }
-  dt { color: var(--text-3); font-size: 12px; }
-  dd { color: var(--text-1); font-size: 12.5px; }
+  dt { color: var(--text-3); font-size: 14px; }
+  dd { color: var(--text-1); font-size: 14.5px; }
   .badge-guide { display: grid; gap: 10px; margin-top: 22px; padding: 16px; border: 1px solid var(--hairline); border-radius: 14px; }
-  .badge-guide span { display: flex; align-items: center; gap: 9px; color: var(--text-2); font-size: 11.5px; }
+  .badge-guide span { display: flex; align-items: center; gap: 9px; color: var(--text-2); font-size: 14px; }
 }
 .section-head {
   h3 { font-size: 19px; }
-  p { font-size: 13px; color: var(--text-2); }
+  p { font-size: 15px; color: var(--text-2); }
 }
 .labA { display: grid; grid-template-columns: 1.7fr 1fr; gap: 16px; }
 .chart-panel { padding: 16px;
@@ -609,58 +609,58 @@ onBeforeUnmount(() => {
     .speeds { display: flex; gap: 5px; margin-left: auto; } }
   .chart { height: 340px; }
   .ref-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap;
-    .info { font-size: 12px; padding: 4px 10px; display: flex; align-items: center; gap: 6px;
+    .info { font-size: 14px; padding: 4px 10px; display: flex; align-items: center; gap: 6px;
       .dot { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
       .dot.red { background: #ef4444; } .dot.amber { background: #f59e0b; } }
-    .hint { font-size: 12px; color: var(--text-2); margin-left: auto; } }
-  .ref-explain { margin-top: 10px; padding: 12px 16px; font-size: 12.5px; color: var(--text-2); line-height: 1.8;
+    .hint { font-size: 14px; color: var(--text-2); margin-left: auto; } }
+  .ref-explain { margin-top: 10px; padding: 12px 16px; font-size: 14.5px; color: var(--text-2); line-height: 1.8;
     b { color: var(--amber); display: block; margin-bottom: 4px; } }
 }
-.switch { font-size: 12.5px; color: var(--text-2); display: flex; align-items: center; gap: 6px; input { accent-color: var(--blue); } }
-.vs { font-size: 13px; color: var(--text-2); display: flex; align-items: center; gap: 8px;
-  i { font-style: normal; font-size: 11px; opacity: 0.7; }
+.switch { font-size: 14.5px; color: var(--text-2); display: flex; align-items: center; gap: 6px; input { accent-color: var(--blue); } }
+.vs { font-size: 15px; color: var(--text-2); display: flex; align-items: center; gap: 8px;
+  i { font-style: normal; font-size: 14px; opacity: 0.7; }
   b.a { color: #4da8ff; } b.b { color: var(--cyan); } }
 .readout-panel { display: flex; flex-direction: column; gap: 12px;
-  .guide { padding: 15px 18px; b { color: var(--blue); } p { font-size: 13px; color: var(--text-2); margin-top: 6px; line-height: 1.8; } }
+  .guide { padding: 15px 18px; b { color: var(--blue); } p { font-size: 15px; color: var(--text-2); margin-top: 6px; line-height: 1.8; } }
   .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px;
-    .ro { text-align: center; i { display: block; font-style: normal; font-size: 11.5px; color: var(--text-2); } b { font-size: 20px; color: var(--cyan); }
+    .ro { text-align: center; i { display: block; font-style: normal; font-size: 14px; color: var(--text-2); } b { font-size: 20px; color: var(--cyan); }
       b.low { color: var(--amber); }
-      .ro.wide, &.wide { grid-column: 1 / -1; } u { text-decoration: none; font-size: 11px; color: var(--text-2); } } }
-  .story-line { padding: 12px 16px; font-size: 13px; color: var(--text-1); }
+      .ro.wide, &.wide { grid-column: 1 / -1; } u { text-decoration: none; font-size: 14px; color: var(--text-2); } } }
+  .story-line { padding: 12px 16px; font-size: 15px; color: var(--text-1); }
   .evidence { padding: 12px 16px;
-    i { font-style: normal; font-size: 11px; color: var(--blue); letter-spacing: 0.15em; }
-    .ev-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 7px; font-size: 12.5px;
+    i { font-style: normal; font-size: 14px; color: var(--blue); letter-spacing: 0.15em; }
+    .ev-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 7px; font-size: 14.5px;
       span { color: var(--text-2); } b { color: var(--text-1); text-align: right; } }
-    .ev-note { margin-top: 9px; font-size: 12px; color: var(--text-2); line-height: 1.7; border-top: 1px solid rgba(77,168,255,0.12); padding-top: 8px; } }
-  .cond { padding: 12px 16px; i { font-style: normal; font-size: 11.5px; color: var(--blue); letter-spacing: 0.15em; } p { font-size: 12.5px; color: var(--text-2); margin-top: 4px; }
+    .ev-note { margin-top: 9px; font-size: 14px; color: var(--text-2); line-height: 1.7; border-top: 1px solid rgba(77,168,255,0.12); padding-top: 8px; } }
+  .cond { padding: 12px 16px; i { font-style: normal; font-size: 14px; color: var(--blue); letter-spacing: 0.15em; } p { font-size: 14.5px; color: var(--text-2); margin-top: 4px; }
     p b.a { color: #4da8ff; } p b.b { color: var(--cyan); }
-    .cond-note { font-size: 11.5px; opacity: 0.8; } }
+    .cond-note { font-size: 14px; opacity: 0.8; } }
 }
 .labB { padding: 20px; }
 .sandbox { display: grid; grid-template-columns: 1fr 1.1fr 1.5fr; gap: 20px;
-  h4 { font-size: 13px; color: var(--blue); letter-spacing: 0.12em; margin-bottom: 12px; } }
+  h4 { font-size: 15px; color: var(--blue); letter-spacing: 0.12em; margin-bottom: 12px; } }
 .factors { .env-group { margin-bottom: 14px; }
-  .env-name { display: block; font-size: 12.5px; color: var(--text-1); margin-bottom: 6px; }
+  .env-name { display: block; font-size: 14.5px; color: var(--text-1); margin-bottom: 6px; }
   .env-opts { display: flex; gap: 6px; flex-wrap: wrap; }
   .hot { border-color: rgba(239, 68, 68, 0.5); color: #ffb4b4; } }
 .mechs { .mech-list { display: flex; flex-direction: column; gap: 9px; }
   .mech { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; background: rgba(13,18,32,0.5); border: 1px solid rgba(77,168,255,0.12); border-radius: 10px;
     .mech-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: #4da8ff; box-shadow: 0 0 6px #4da8ff; }
     .mech-dot.hot { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
-    b { font-size: 13px; color: var(--text-1); display: block; }
-    p { font-size: 12px; color: var(--text-2); margin-top: 2px; line-height: 1.6; } }
-  .combo { margin-top: 12px; font-size: 12.5px; color: var(--amber); line-height: 1.7;
+    b { font-size: 15px; color: var(--text-1); display: block; }
+    p { font-size: 14px; color: var(--text-2); margin-top: 2px; line-height: 1.6; } }
+  .combo { margin-top: 12px; font-size: 14.5px; color: var(--amber); line-height: 1.7;
     &.danger { color: #ffb4b4; } } }
 .trend-col { display: flex; flex-direction: column;
   .chart { height: 250px; }
-  .trend-src { margin-top: 8px; font-size: 11px; line-height: 1.65; color: var(--text-3);
+  .trend-src { margin-top: 8px; font-size: 14px; line-height: 1.65; color: var(--text-3);
     b { display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 5px; font-weight: 500;
-      font-size: 10px; letter-spacing: 0.1em; color: var(--blue); background: rgba(77,168,255,0.1);
+      font-size: 14px; letter-spacing: 0.1em; color: var(--blue); background: rgba(77,168,255,0.1);
       border: 1px solid rgba(77,168,255,0.22); } }
   .verdict { margin-top: 10px; padding: 10px 16px; display: flex; align-items: center; justify-content: center; gap: 14px;
-    i { font-style: normal; font-size: 11.5px; color: var(--text-2); letter-spacing: 0.2em; }
+    i { font-style: normal; font-size: 14px; color: var(--text-2); letter-spacing: 0.2em; }
     b { font-size: 22px; &.good { color: var(--green); } &.warn { color: var(--amber); } &.bad { color: var(--red); } } } }
-.sb-note { margin-top: 14px; font-size: 11.5px; color: var(--text-2); }
+.sb-note { margin-top: 14px; font-size: 14px; color: var(--text-2); }
 @media (max-width: 1080px) {
   .labA, .sandbox { grid-template-columns: minmax(0, 1fr); }
 }
@@ -673,7 +673,7 @@ onBeforeUnmount(() => {
   .switch input[type='checkbox'] { width: 20px; height: 20px; }
   /* 这条必须写成 .trend-col .trend-src b：原样式嵌在 .trend-col 里，
      编译后是三层选择器，只写两层会被它压过去（改了半天不生效的坑）。 */
-  .trend-col .trend-src b { font-size: 12px; }
-  .corner, .badge-guide span, .cond-note, .sb-note { font-size: 12px; }
+  .trend-col .trend-src b { font-size: 14px; }
+  .corner, .badge-guide span, .cond-note, .sb-note { font-size: 14px; }
 }
 </style>

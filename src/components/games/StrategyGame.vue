@@ -155,22 +155,22 @@ const dominant = computed(() => {
   padding: 18px 20px;
   .g-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
     .g-title { display: flex; align-items: baseline; gap: 10px;
-      b { font-size: 15.5px; color: var(--text-1); }
-      i { font-style: normal; font-size: 12px; color: var(--text-3); } }
-    .g-stat { font-size: 12px; color: var(--cyan); } }
+      b { font-size: 17.5px; color: var(--text-1); }
+      i { font-style: normal; font-size: 14px; color: var(--text-3); } }
+    .g-stat { font-size: 14px; color: var(--cyan); } }
   .g-body { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-  .g-caliber { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--hairline); font-size: 11px; color: var(--text-3); line-height: 1.7; }
+  .g-caliber { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--hairline); font-size: 14px; color: var(--text-3); line-height: 1.7; }
 }
-.g-badge { padding: 2px 9px; border: 1px solid rgba(34, 211, 238, 0.4); border-radius: 999px; font-size: 11px; color: var(--cyan); }
+.g-badge { padding: 2px 9px; border: 1px solid rgba(34, 211, 238, 0.4); border-radius: 999px; font-size: 14px; color: var(--cyan); }
 
 .gs-svg { display: block; width: 100%; height: auto; }
 .gs-grid { stroke: rgba(77, 168, 255, 0.1); stroke-width: 1; }
 .gs-ref { stroke: rgba(239, 68, 68, 0.55); stroke-width: 1.2; stroke-dasharray: 5 4; }
-.gs-axis { fill: var(--text-3); font-size: 9px; }
-.gs-reflabel { fill: rgba(239, 68, 68, 0.75); font-size: 9.5px; text-anchor: end; }
+.gs-axis { fill: var(--text-3); font-size: 14px; }
+.gs-reflabel { fill: rgba(239, 68, 68, 0.75); font-size: 14px; text-anchor: end; }
 .gs-line { fill: none; stroke: var(--cyan); stroke-width: 2; stroke-linejoin: round; }
 .gs-dot { fill: var(--cyan); }
-.gs-caption { fill: var(--text-2); font-size: 13px; }
+.gs-caption { fill: var(--text-2); font-size: 15px; }
 
 .gs-cellbox { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: center; margin-top: 12px; }
 .gs-battery { display: block; width: 110px; height: auto; }
@@ -180,29 +180,29 @@ const dominant = computed(() => {
 .gs-flakes { transition: opacity 0.5s ease; }
 .gs-meters { list-style: none; display: flex; flex-direction: column; gap: 9px;
   li { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; align-items: center;
-    span { font-size: 12px; color: var(--text-2); }
+    span { font-size: 14px; color: var(--text-2); }
     i { display: block; height: 8px; border-radius: 4px; background: rgba(77, 168, 255, 0.1); overflow: hidden;
       b { display: block; height: 100%; border-radius: 4px; transition: width 0.45s ease; } } } }
 
-.gs-q { font-size: 13px; color: var(--text-1); margin-bottom: 10px; }
+.gs-q { font-size: 15px; color: var(--text-1); margin-bottom: 10px; }
 .gs-opt {
   display: block; width: 100%; text-align: left;
   min-height: 44px; margin-bottom: 8px; padding: 9px 13px;
   border: 1px solid var(--hairline); border-radius: 10px;
   background: rgba(19, 26, 43, 0.55); cursor: pointer; transition: all 0.2s ease;
-  b { display: block; font-size: 13px; color: var(--text-1); }
-  i { display: block; margin-top: 2px; font-style: normal; font-size: 11.5px; color: var(--text-3); }
+  b { display: block; font-size: 15px; color: var(--text-1); }
+  i { display: block; margin-top: 2px; font-style: normal; font-size: 14px; color: var(--text-3); }
   &:not(:disabled):hover { border-color: var(--hairline-strong); background: rgba(77, 168, 255, 0.08); }
   &:disabled { opacity: 0.5; cursor: default; }
 }
 .gs-event { margin-top: 4px; padding: 10px 14px; border-left: 2px solid rgba(34, 211, 238, 0.5); border-radius: 0 8px 8px 0;
-  background: rgba(34, 211, 238, 0.05); font-size: 12.5px; color: var(--text-2); line-height: 1.85;
+  background: rgba(34, 211, 238, 0.05); font-size: 14.5px; color: var(--text-2); line-height: 1.85;
   &.warn { border-left-color: rgba(245, 158, 11, 0.6); background: rgba(245, 158, 11, 0.06); } }
 
 .g-over { text-align: center; padding: 26px 20px;
   .go-score { font-size: 34px; color: var(--cyan); }
-  b { display: block; margin: 6px 0 8px; font-size: 15px; color: var(--text-1); }
-  p { font-size: 12.5px; color: var(--text-2); line-height: 1.8; max-width: 52ch; margin: 0 auto 16px; }
+  b { display: block; margin: 6px 0 8px; font-size: 17px; color: var(--text-1); }
+  p { font-size: 14.5px; color: var(--text-2); line-height: 1.8; max-width: 52ch; margin: 0 auto 16px; }
   .btn-primary { min-height: 44px; } }
 
 @media (max-width: 1080px) {
@@ -210,13 +210,13 @@ const dominant = computed(() => {
 }
 @media (max-width: 767px) {
   .game { padding: 14px 16px; }
-  .gs-opt { b { font-size: 13.5px; } i { font-size: 12px; } }
-  .gs-event { font-size: 12.5px; }
+  .gs-opt { b { font-size: 15.5px; } i { font-size: 14px; } }
+  .gs-event { font-size: 14.5px; }
   .gs-cellbox { grid-template-columns: 104px minmax(0, 1fr); }
   /* SVG 内文字按 viewBox 缩放：窄屏容器约为 viewBox 的 0.87—0.97 倍，
      用户单位字号相应放大，保证渲染后仍 ≥12px 可读下限 */
-  .gs-axis { font-size: 13px; }
-  .gs-reflabel { font-size: 12.5px; }
-  .gs-caption { font-size: 15px; }
+  .gs-axis { font-size: 15px; }
+  .gs-reflabel { font-size: 14.5px; }
+  .gs-caption { font-size: 17px; }
 }
 </style>

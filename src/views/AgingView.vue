@@ -802,45 +802,45 @@ onBeforeUnmount(() => {
   --stage-h: clamp(400px, calc(100vh - 250px), 560px);
 }
 .head { position: relative;
-  .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--text-2); }
+  .badge-line { position: absolute; right: 0; top: 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-2); }
 }
 .obs { display: grid; grid-template-columns: 1.9fr 1fr; gap: 18px; align-items: start; }
 .stage { position: relative; height: var(--stage-h); overflow: hidden; min-width: 0; }
 .three-box { position: absolute; inset: 0; cursor: grab; }
 .scale-row { position: absolute; left: 14px; top: 14px; display: flex; gap: 8px; z-index: 4;
   .btn-ghost { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 14px;
-    b { font-size: 12.5px; }
-    i { font-style: normal; font-size: 10.5px; color: var(--text-3); } } }
+    b { font-size: 14.5px; }
+    i { font-style: normal; font-size: 14px; color: var(--text-3); } } }
 .mech-row { position: absolute; left: 14px; bottom: 14px; display: flex; gap: 7px; flex-wrap: wrap; z-index: 4; max-width: 72%;
-  .mech-btn { padding: 6px 12px; font-size: 12px; } }
+  .mech-btn { padding: 6px 12px; font-size: 14px; } }
 .m-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 1px;
   &.big { width: 12px; height: 12px; margin-right: 9px; box-shadow: 0 0 5px currentColor; } }
 .geom-note { position: absolute; right: 14px; bottom: 12px; z-index: 4; max-width: 46%;
-  font-size: 10.5px; line-height: 1.55; text-align: right; color: var(--text-3); opacity: 0.86; pointer-events: none; }
+  font-size: 14px; line-height: 1.55; text-align: right; color: var(--text-3); opacity: 0.86; pointer-events: none; }
 /* 聚焦提示：桌面浮在舞台顶部中央（左右两侧分别是尺度切换与读数，不冲突） */
 .focus-note { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 4; max-width: 52%;
   padding: 6px 14px; border: 1px solid var(--hairline); border-radius: 999px;
   background: rgba(13, 18, 32, 0.78); backdrop-filter: blur(6px);
-  font-size: 11.5px; line-height: 1.5; text-align: center; color: var(--text-2); pointer-events: none; }
+  font-size: 14px; line-height: 1.5; text-align: center; color: var(--text-2); pointer-events: none; }
 .stage-right { position: absolute; right: 14px; top: 14px; z-index: 4;
   display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .cycle-read { padding: 9px 16px; display: flex; gap: 10px; align-items: center;
-  i { font-style: normal; font-size: 11px; color: var(--text-2); }
+  i { font-style: normal; font-size: 14px; color: var(--text-2); }
   b { font-size: 19px; color: var(--cyan); }
   .soh { color: var(--green); } }
 .view-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-.view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 12px; }
-.view-hint { font-size: 11px; color: var(--text-3); letter-spacing: 0.02em;
+.view-reset { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; padding: 6px 12px; }
+.view-hint { font-size: 14px; color: var(--text-3); letter-spacing: 0.02em;
   .vh-touch { display: none; } }
 
 .side { display: flex; flex-direction: column; gap: 12px; }
 .ctrl-tower { display: flex; flex-direction: column; gap: 12px; max-height: var(--stage-h); overflow-y: auto; padding-right: 2px; }
 .pm-row { display: flex; gap: 8px;
-  .btn-ghost { padding: 5px 12px; font-size: 12px; } }
+  .btn-ghost { padding: 5px 12px; font-size: 14px; } }
 .mech-card { padding: 15px 16px;
   .mech-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  h4 { font-size: 15.5px; color: var(--text-1); display: flex; align-items: center; }
-  .term { display: block; font-style: normal; font-size: 11.5px; color: var(--text-2); margin-top: 3px; }
+  h4 { font-size: 17.5px; color: var(--text-1); display: flex; align-items: center; }
+  .term { display: block; font-style: normal; font-size: 14px; color: var(--text-2); margin-top: 3px; }
   /* 机制特征签名：三条区分轴 + 节奏 + 可逆性，一眼看出这个机制"打哪儿" */
   .m-sig {
     display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center;
@@ -849,17 +849,17 @@ onBeforeUnmount(() => {
     background: rgba(77, 168, 255, 0.05);
   }
   .sig-item { display: inline-flex; align-items: center; gap: 6px;
-    .sig-lab { font-size: 11px; color: var(--blue); }
-    &.wide { flex-basis: 100%; b { font-size: 12px; font-weight: 500; color: var(--text-2); } } }
+    .sig-lab { font-size: 14px; color: var(--blue); }
+    &.wide { flex-basis: 100%; b { font-size: 14px; font-weight: 500; color: var(--text-2); } } }
   .sig-dots { display: inline-flex; gap: 3px;
     i { width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--hairline-strong); } }
   dl { margin-top: 10px; display: grid; grid-template-columns: 84px 1fr; gap: 7px 10px;
-    dt { font-size: 12px; color: var(--blue); }
-    dd { font-size: 12.5px; color: var(--text-2); line-height: 1.62; } }
+    dt { font-size: 14px; color: var(--blue); }
+    dd { font-size: 14.5px; color: var(--text-2); line-height: 1.62; } }
   .pro { margin-top: 14px; border-top: 1px solid var(--hairline); padding-top: 12px;
-    .eq { font-size: 15px; color: var(--cyan); background: rgba(34,211,238,0.07); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; }
-    p { font-size: 12.5px; color: var(--text-2); line-height: 1.8; margin-bottom: 6px; b { color: var(--text-1); } }
-    .disclaim { font-size: 11px; color: var(--text-3); } } }
+    .eq { font-size: 17px; color: var(--cyan); background: rgba(34,211,238,0.07); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; }
+    p { font-size: 14.5px; color: var(--text-2); line-height: 1.8; margin-bottom: 6px; b { color: var(--text-1); } }
+    .disclaim { font-size: 14px; color: var(--text-3); } } }
 
 .info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
   /* 单机制聚焦：读数面板独占一行，不留半幅空白 */
@@ -868,21 +868,21 @@ onBeforeUnmount(() => {
 /* ── 六机制对照矩阵 ── */
 .mech-matrix { padding: 14px 16px; margin-top: 18px;
   .mm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
-    h5 { font-size: 13px; color: var(--text-1); i { font-style: normal; font-size: 11px; color: var(--text-3); margin-left: 8px; } }
-    .mm-hint { font-size: 11px; color: var(--text-3); } }
+    h5 { font-size: 15px; color: var(--text-1); i { font-style: normal; font-size: 14px; color: var(--text-3); margin-left: 8px; } }
+    .mm-hint { font-size: 14px; color: var(--text-3); } }
   .mm-grid { display: flex; flex-direction: column; gap: 2px; }
   .mm-row { display: grid; grid-template-columns: minmax(96px, 1.1fr) 64px 64px 64px minmax(0, 2.4fr);
     align-items: center; gap: 6px; padding: 6px 8px; border-radius: 7px; }
-  .mm-title { font-size: 10.5px; letter-spacing: 0.06em; color: var(--text-3); padding-bottom: 2px;
+  .mm-title { font-size: 14px; letter-spacing: 0.06em; color: var(--text-3); padding-bottom: 2px;
     span:not(:first-child) { text-align: center; } }
   .mm-item { border: 0; background: transparent; color: var(--text-2); font: inherit; text-align: left; cursor: pointer;
     transition: background 0.18s ease, color 0.18s ease;
     &:hover { background: rgba(77, 168, 255, 0.1); color: var(--text-1); } }
-  .mm-name { display: inline-flex; align-items: center; font-size: 12.5px; white-space: nowrap; }
+  .mm-name { display: inline-flex; align-items: center; font-size: 14.5px; white-space: nowrap; }
   .mm-cells { display: inline-flex; gap: 3px; justify-content: center;
     i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--hairline-strong); } }
-  .mm-pace { font-size: 11.5px; color: var(--text-2); }
-  .mm-note { margin-top: 10px; font-size: 11px; color: var(--text-3); line-height: 1.65;
+  .mm-pace { font-size: 14px; color: var(--text-2); }
+  .mm-note { margin-top: 10px; font-size: 14px; color: var(--text-3); line-height: 1.65;
     strong { color: var(--text-2); font-weight: 600; } }
 }
 @media (max-width: 767px) {
@@ -895,41 +895,41 @@ onBeforeUnmount(() => {
 }
 
 .finger { padding: 14px 16px;
-  h5 { font-size: 13px; color: var(--text-1); i { font-style: normal; font-size: 11px; color: var(--text-3); margin-left: 8px; } }
-  .finger-hint { font-size: 11px; color: var(--text-3); text-align: center; } }
+  h5 { font-size: 15px; color: var(--text-1); i { font-style: normal; font-size: 14px; color: var(--text-3); margin-left: 8px; } }
+  .finger-hint { font-size: 14px; color: var(--text-3); text-align: center; } }
 .inv { padding: 14px 16px;
-  .inv-head { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-2); b { color: var(--cyan); } }
+  .inv-head { display: flex; justify-content: space-between; font-size: 14.5px; color: var(--text-2); b { color: var(--cyan); } }
   .inv-track { height: 8px; border-radius: 4px; background: rgba(77,168,255,0.1); margin-top: 8px; overflow: hidden; }
   .inv-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--blue)); border-radius: 4px; transition: width 0.3s; }
-  .inv-note { font-size: 11px; color: var(--text-3); margin-top: 7px; line-height: 1.6; } }
+  .inv-note { font-size: 14px; color: var(--text-3); margin-top: 7px; line-height: 1.6; } }
 
 .ctrl { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
   // "循环播放"这个 checkbox 原先没有任何样式：`.switch` 只在 DataLabView / PrincipleView
   // 的 scoped 块里定义过，跨组件不生效，于是它渲染成系统原生复选框，和全站控件不是一套皮。
-  .switch { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); cursor: pointer;
+  .switch { display: flex; align-items: center; gap: 8px; font-size: 14.5px; color: var(--text-2); cursor: pointer;
     input { accent-color: var(--blue); width: 15px; height: 15px; } }
   .slider-row { display: flex; align-items: center; gap: 12px;
     input { flex: 1; }
     .pct { color: var(--cyan); min-width: 46px; text-align: right; font-size: 17px; } }
-  .caliber { font-size: 11px; color: var(--text-3); line-height: 1.52; }
+  .caliber { font-size: 14px; color: var(--text-3); line-height: 1.52; }
   .milestones { display: flex; gap: 6px; flex-wrap: wrap;
-    .sm { padding: 4px 10px; font-size: 11.5px; } }
+    .sm { padding: 4px 10px; font-size: 14px; } }
   .play-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    .play-main { padding: 9px 22px; font-size: 15px; }
+    .play-main { padding: 9px 22px; font-size: 17px; }
     .step-group { display: flex; gap: 6px; }
-    .icon { width: 36px; height: 36px; justify-content: center; font-size: 12px; }
-    .loop { margin-left: auto; font-size: 12.5px; } }
+    .icon { width: 36px; height: 36px; justify-content: center; font-size: 14px; }
+    .loop { margin-left: auto; font-size: 14.5px; } }
   .speeds { display: flex; align-items: center; gap: 6px; padding-top: 8px; border-top: 1px solid var(--hairline);
-    .speeds-label { font-size: 11.5px; color: var(--text-3); margin-right: 2px; }
-    .btn-ghost { padding: 5px 12px; font-size: 12px; } }
-  .summary { font-size: 12px; color: var(--cyan); background: rgba(34,211,238,0.08); padding: 8px 12px; border-radius: 8px;
+    .speeds-label { font-size: 14px; color: var(--text-3); margin-right: 2px; }
+    .btn-ghost { padding: 5px 12px; font-size: 14px; } }
+  .summary { font-size: 14px; color: var(--cyan); background: rgba(34,211,238,0.08); padding: 8px 12px; border-radius: 8px;
     &.node-flash { color: var(--amber); background: rgba(245,158,11,0.08); } } }
 
 .charts { padding: 18px; }
 .chart-tabs { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; flex-wrap: wrap;
-  .hint { font-size: 11.5px; color: var(--text-3); margin-left: auto; } }
+  .hint { font-size: 14px; color: var(--text-3); margin-left: auto; } }
 .chart-box { height: 300px; }
-.chart-caliber { margin-top: 8px; font-size: 11px; color: var(--text-3); }
+.chart-caliber { margin-top: 8px; font-size: 14px; color: var(--text-3); }
 /* 平板 / 窄笔记本：双栏塌成单栏。舞台仍是"画布铺满 + 浮层绝对定位"的桌面思路 —— 这个宽度还放得下 */
 @media (max-width: 1080px) {
   .obs { grid-template-columns: minmax(0, 1fr); }
@@ -960,44 +960,44 @@ onBeforeUnmount(() => {
     flex-direction: column; align-items: stretch; gap: 8px;
   }
   .cycle-read { justify-content: flex-start; padding: 8px 14px; gap: 9px;
-    i { font-size: 12px; }
+    i { font-size: 14px; }
     b { font-size: 17px; } }
   .view-tools { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
-  .view-reset { min-height: 44px; padding: 8px 14px; font-size: 12.5px; }
-  .view-hint { display: block; font-size: 12px;
+  .view-reset { min-height: 44px; padding: 8px 14px; font-size: 14.5px; }
+  .view-hint { display: block; font-size: 14px;
     .vh-mouse { display: none; }
     .vh-touch { display: inline; } }
   .scale-row {
     position: static; order: 3; width: 100%;
     .btn-ghost { flex: 1; min-height: 48px; padding: 8px 10px;
-      b { font-size: 13px; }
-      i { font-size: 12px; } } }
+      b { font-size: 15px; }
+      i { font-size: 14px; } } }
   .mech-row {
     position: static; order: 4; width: 100%; max-width: none;
-    .btn-ghost { min-height: 44px; padding: 8px 13px; font-size: 12.5px; } }
+    .btn-ghost { min-height: 44px; padding: 8px 13px; font-size: 14.5px; } }
   .geom-note {
     position: static; order: 6; max-width: none;
-    font-size: 12px; text-align: left;
+    font-size: 14px; text-align: left;
   }
   .focus-note {
     position: static; order: 5; max-width: none; transform: none;
-    font-size: 12px; text-align: left; border-radius: var(--radius-sm);
+    font-size: 14px; text-align: left; border-radius: var(--radius-sm);
   }
 
   /* 控制塔里的触摸目标统一撑到 44px —— 手机上按钮偏小极易点错 */
   .ctrl {
-    .milestones .btn-ghost { min-height: 44px; padding: 8px 14px; font-size: 12.5px; }
+    .milestones .btn-ghost { min-height: 44px; padding: 8px 14px; font-size: 14.5px; }
     .play-main { min-height: 48px; }
-    .step-group .btn-ghost { min-width: 48px; min-height: 48px; font-size: 12.5px; }
+    .step-group .btn-ghost { min-width: 48px; min-height: 48px; font-size: 14.5px; }
     .speeds .btn-ghost { min-height: 44px; min-width: 52px; }
     .switch { min-height: 44px; align-items: center; }
     .switch input[type='checkbox'] { width: 20px; height: 20px; }
-    .caliber { font-size: 12px; }
+    .caliber { font-size: 14px; }
   }
-  .pm-row .btn-ghost { min-height: 44px; padding: 8px 16px; font-size: 13px; }
-  .mech-card .term { font-size: 12px; }
-  .chart-tabs .btn-ghost { min-height: 44px; padding: 8px 16px; font-size: 12.5px; }
-  .chart-tabs .hint, .chart-caliber { font-size: 12px; }
-  .finger-hint, .inv-note { font-size: 12px; }
+  .pm-row .btn-ghost { min-height: 44px; padding: 8px 16px; font-size: 15px; }
+  .mech-card .term { font-size: 14px; }
+  .chart-tabs .btn-ghost { min-height: 44px; padding: 8px 16px; font-size: 14.5px; }
+  .chart-tabs .hint, .chart-caliber { font-size: 14px; }
+  .finger-hint, .inv-note { font-size: 14px; }
 }
 </style>
