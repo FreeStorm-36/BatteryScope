@@ -7,10 +7,10 @@
       <component :is="Component" :key="$route.path" />
     </transition>
   </router-view>
-  <!-- 换章百叶窗：每次路由变化重放一次，12 条竖叶依次"盖住 → 掀开"。
-       放在导航之下（z-index 95 < 导航 100），所以读起来是"内容区翻页"、导航保持稳定。
-       首次加载不播（blindKey 初值 0），不会拖慢首屏。 -->
-  <div v-if="blindKey" :key="blindKey" class="page-blinds" aria-hidden="true">
+  <!-- 换章特效：四种动作轮换（竖百叶 / 横幕 / 圆形开合 / 斜向扫掠）。
+       放在导航之下（z-index 95 < 导航 100），读作"内容区翻页"、导航保持稳定。
+       首次加载不播（fxKey 初值 0），不会拖慢首屏。 -->
+  <div v-if="fxKey" :key="fxKey" class="page-fx" :data-fx="fxKind" aria-hidden="true">
     <i v-for="n in 12" :key="n" :style="{ animationDelay: (n - 1) * 26 + 'ms' }"></i>
   </div>
   <!-- 换章时懒加载 chunk 的等待反馈。延迟 150ms 才出现（见 main.js），
@@ -36,16 +36,28 @@ async function openLibrary() {
 const route = useRoute()
 const routeLoading = inject('routeLoading', ref(false))
 
-// 百叶窗重放用的 key：初值 0 表示"还没换过章"，此时不渲染，
-// 所以进站第一眼不会有幕布扫过。每次换章自增，靠 :key 强制重挂载 → CSS 动画重播。
-const blindKey = ref(0)
+// ── 换章：章节主色 + 切换特效 ──
+// 八章各配一色，写在 documentElement 上（不动 DOM 结构），由 base.scss 的 --hue-chapter 消费：
+// 章节眉标、特效条带、以及任何用到该变量的地方都会跟着换色。
+const CHAPTER_HUE = ['#4da8ff', '#22d3ee', '#a78bfa', '#f59e0b', '#34d399', '#38bdf8', '#fb7185', '#e879f9']
+// 四种切换特效轮换，连续翻章节不会每次都看到同一个动作
+const FX_KINDS = ['blinds', 'curtain', 'iris', 'wipe']
+const fxKey = ref(0)
+const fxKind = ref('blinds')
+
+function applyChapterTint(chapter) {
+  document.documentElement.style.setProperty('--hue-chapter', CHAPTER_HUE[((chapter ?? 1) - 1) % CHAPTER_HUE.length])
+}
+applyChapterTint(route.meta.chapter) // 进站先设一次；首次不播特效（fxKey 仍为 0）
 
 // 章节切换后强制回到页面顶部：
 // 固定导航高约 82px，若残留上一页的滚动位置，章节标题会被导航压住、动画区底部也会被切出视口。
 watch(
   () => route.path,
   () => {
-    blindKey.value += 1
+    applyChapterTint(route.meta.chapter)
+    fxKind.value = FX_KINDS[fxKey.value % FX_KINDS.length]
+    fxKey.value += 1 // 自增靠 :key 强制重挂载 → CSS 动画重播
     window.scrollTo({ top: 0, behavior: 'auto' })
   },
   { flush: 'post' }

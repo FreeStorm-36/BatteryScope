@@ -25,6 +25,12 @@
   --red: #ef4444;              // 失效
   --violet: #a78bfa;           // 正极材料
 
+  // ── 章节主色 ──
+  // 八章各配一色，由 App.vue 在路由变化时写到 documentElement 上。
+  // 这样同一个站点在不同章节会有不同的色彩气质，而不是从头到尾一种蓝。
+  // 这里给一个兜底值（未设置时退回品牌蓝）。
+  --hue-chapter: #4da8ff;
+
   // ── 文本：改为**白色透明度分层**（参考站做法） ──
   // 好处是同一套 token 落在页面底 / 卡片面 / 玻璃层上都自动成立，
   // 不会出现"某个底色下偏灰、换一块底就偏亮"的漂移。
@@ -85,9 +91,16 @@ input[type='range'] { accent-color: var(--cyan); }
 
 html, body {
   background: var(--bg-page);
+  // ── 全站底色 ──
+  // 原先这里是一层 rgba(37,99,235,.13) 的蓝色径向 + #0a0e1a→#0c1220→#080c16 的蓝黑渐变，
+  // 全站那股"墨蓝"就是它 —— 光改 token 只能动卡片，动不了这一层。
+  // 现在换成**中性底 + 三色极淡环境光**（紫 / 青 / 暖各据一角），
+  // 主色才有地方跳出来，页面上也不再从头到尾一个色调。
   background-image:
-    radial-gradient(circle at 72% 8%, rgba(37, 99, 235, 0.13), transparent 30%),
-    linear-gradient(180deg, #0a0e1a 0%, #0c1220 48%, #080c16 100%);
+    radial-gradient(circle at 12% 6%, rgba(139, 92, 246, 0.13), transparent 36%),
+    radial-gradient(circle at 86% 10%, rgba(34, 211, 238, 0.11), transparent 34%),
+    radial-gradient(circle at 50% 98%, rgba(245, 158, 11, 0.07), transparent 42%),
+    linear-gradient(180deg, #13151b 0%, #0f1116 52%, #0b0d11 100%);
   color: var(--text-1);
   font-family: var(--sans);
   font-size: 17px;
@@ -102,9 +115,13 @@ html, body {
 
 ::selection { background: rgba(77, 168, 255, 0.35); color: #fff; }
 
-// ── 通用面板：低对比表面 + 清晰边界 ──
+// ── 通用面板：中性石墨表面 + 清晰边界 ──
+// ⚠️ 这里的底色原先写成 rgba(24,33,54) → rgba(13,18,34)，是**蓝偏**的；
+//    面板铺满整页，所以全站那股"墨蓝"主要来自这一层 ——
+//    只改 --bg-page 而不动这里，底色换了也看不出来。
+//    改成中性石墨后，蓝/青/紫/暖这些强调色才有地方跳出来。
 .panel {
-  background: linear-gradient(180deg, rgba(24, 33, 54, 0.72), rgba(13, 18, 34, 0.9));
+  background: linear-gradient(180deg, rgba(27, 30, 37, 0.74), rgba(15, 17, 21, 0.9));
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
   box-shadow: var(--shadow-1);
@@ -122,7 +139,7 @@ html, body {
 // 而 EndingView 也在用 class="card-panel" —— scoped 样式跨组件不生效，
 // 于是那边的"卡片"其实既没有底色也没有边框，白白丢了一整层视觉结构。
 .card-panel {
-  background: rgba(20, 27, 46, 0.6);
+  background: rgba(26, 29, 36, 0.62);
   border: 1px solid var(--hairline);
   border-radius: 10px;
 }
@@ -179,8 +196,10 @@ html, body {
 
 // 章节标题体系
 .chapter-eyebrow {
-  font-size: 14px; letter-spacing: 0.24em; color: var(--cyan);
+  font-size: 14px; letter-spacing: 0.24em; color: var(--hue-chapter, var(--cyan));
   text-transform: uppercase; margin-bottom: 7px; font-weight: 500;
+  // 给章节色一点光晕，让它真的"亮"起来，而不只是一行小字换了颜色
+  text-shadow: 0 0 18px color-mix(in srgb, var(--hue-chapter, var(--cyan)) 50%, transparent);
 }
 // ── 标题排版：中文大标题走展示体（楷系），正文与英文保持黑体 ──
 // 这是参考站最有辨识度的一处处理（它们注释原话是"标题使用展示字体，正文使用系统黑体"）。
@@ -229,27 +248,73 @@ input[type='range'] {
 .page-fade-enter-from { opacity: 0; transform: translateY(10px); }
 .page-fade-leave-to { opacity: 0; transform: translateY(-6px); }
 
-// ── 换章百叶窗（"翻页"效果） ──
-// 12 条竖叶依次"盖住 → 掀开"，每条错开 26ms，整体约 620ms。
-// 纯 CSS：每条叶子用 scaleY 从 0 长到 1（盖住），在中点切换 transform-origin 后
-// 再缩回 0（掀开），于是看起来是从上往下盖、再从下往上揭。
-// pointer-events: none —— 永远不吃点击。
-.page-blinds {
+// ── 换章特效：四种交替 ──
+// App.vue 每换一次章就换一种效果（轮换顺序 blinds → curtain → iris → wipe），
+// 所以连续翻章节不会每次都看到同一套动作。
+// 全部 pointer-events: none，永远不吃点击；prefers-reduced-motion 时会被压到 0.01ms。
+.page-fx {
   position: fixed; inset: 0; z-index: 95;
-  display: flex; pointer-events: none;
-  i {
-    flex: 1 1 0; height: 100%;
-    background: linear-gradient(180deg, var(--bg-page), var(--bg-block));
-    border-right: 1px solid rgba(77, 168, 255, 0.06);
-    transform: scaleY(0);
-    animation: blind-sweep 620ms var(--ease-in-out) both;
+  display: flex; pointer-events: none; overflow: hidden;
+  > i { background: linear-gradient(180deg, var(--bg-page), var(--bg-block)); }
+
+  /* ① 竖百叶：12 条竖叶自上而下盖住，再自下而上掀开 */
+  &[data-fx='blinds'] {
+    flex-direction: row;
+    > i { flex: 1 1 0; height: 100%;
+      border-right: 1px solid color-mix(in srgb, var(--hue-chapter) 10%, transparent);
+      animation: fx-blinds 620ms var(--ease-in-out) both; }
+  }
+  /* ② 横幕：12 条横带从中间向两侧铺开再收走 */
+  &[data-fx='curtain'] {
+    flex-direction: column;
+    > i { flex: 1 1 0; width: 100%;
+      animation: fx-curtain 600ms var(--ease-in-out) both; }
+  }
+  /* ③ 圆形开合：从标题附近张开一个圆把画面吞掉，再收回 */
+  &[data-fx='iris'] {
+    > i { display: none; }
+    &::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at 50% 42%, var(--bg-block), var(--bg-page) 72%);
+      animation: fx-iris 680ms var(--ease-in-out) both;
+    }
+  }
+  /* ④ 斜向扫掠：一条斜带从左侧扫过整屏 */
+  &[data-fx='wipe'] {
+    > i { display: none; }
+    &::after {
+      content: ''; position: absolute; inset: -25% -45%;
+      background: linear-gradient(105deg,
+        transparent 28%,
+        color-mix(in srgb, var(--hue-chapter) 12%, var(--bg-page)) 41%,
+        var(--bg-block) 56%,
+        transparent 72%);
+      animation: fx-wipe 640ms var(--ease-in-out) both;
+    }
   }
 }
-@keyframes blind-sweep {
+@keyframes fx-blinds {
   0%   { transform: scaleY(0); transform-origin: top; }
   42%  { transform: scaleY(1); transform-origin: top; }
   58%  { transform: scaleY(1); transform-origin: bottom; }
   100% { transform: scaleY(0); transform-origin: bottom; }
+}
+@keyframes fx-curtain {
+  0%   { transform: scaleX(0); }
+  45%  { transform: scaleX(1); }
+  55%  { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+@keyframes fx-iris {
+  0%   { clip-path: circle(0% at 50% 42%); }
+  48%  { clip-path: circle(150% at 50% 42%); }
+  52%  { clip-path: circle(150% at 50% 42%); }
+  100% { clip-path: circle(0% at 50% 42%); }
+}
+@keyframes fx-wipe {
+  0%   { transform: translateX(-125%) skewX(-8deg); }
+  50%  { transform: translateX(0) skewX(-8deg); }
+  100% { transform: translateX(125%) skewX(-8deg); }
 }
 
 // 滚动条（蓝色系）

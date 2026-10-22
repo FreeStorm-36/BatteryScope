@@ -84,8 +84,8 @@ function onSeek(e) {
   aspect-ratio: 16 / 9; max-height: 430px; min-height: 250px;
   border: 1px solid var(--hairline); border-radius: 12px; overflow: hidden;
   background:
-    radial-gradient(120% 90% at 50% 0%, rgba(37, 99, 235, 0.14), transparent 62%),
-    linear-gradient(180deg, #0a0f1c 0%, #070b14 100%);
+    radial-gradient(120% 90% at 50% 0%, rgba(139, 92, 246, 0.10), transparent 62%),
+    linear-gradient(180deg, #14161c 0%, #0b0d11 100%);
   canvas { display: block; width: 100%; height: 100%; }
 }
 
