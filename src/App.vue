@@ -11,7 +11,7 @@
        放在导航之下（z-index 95 < 导航 100），读作"内容区翻页"、导航保持稳定。
        首次加载不播（fxKey 初值 0），不会拖慢首屏。 -->
   <div v-if="fxKey" :key="fxKey" class="page-fx" :data-fx="fxKind" aria-hidden="true">
-    <i v-for="n in 12" :key="n" :style="{ animationDelay: (n - 1) * 26 + 'ms' }"></i>
+    <i v-for="n in 10" :key="n" :style="{ animationDelay: (n - 1) * 10 + 'ms' }"></i>
   </div>
   <!-- 换章时懒加载 chunk 的等待反馈。延迟 150ms 才出现（见 main.js），
        所以本机快速换章不会闪。 -->
@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { inject, ref, watch, shallowRef, nextTick } from 'vue'
+import { inject, ref, watch, shallowRef, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import LifeTrackNav from './components/LifeTrackNav.vue'
 
@@ -50,14 +50,29 @@ function applyChapterTint(chapter) {
 }
 applyChapterTint(route.meta.chapter) // 进站先设一次；首次不播特效（fxKey 仍为 0）
 
+// 特效播放期间给 <html> 挂一个 .fx-running，把全站最贵的 backdrop-filter 临时关掉。
+// 幕布盖着的那 700ms 里模糊本来也看不见，但浏览器每帧仍要重算整屏背景模糊 ——
+// 这是换章掉帧的第二大来源（第一大是页面层的 transform，已在 .page-fade 里移除）。
+let fxTimer = null
+function runFx() {
+  fxKind.value = FX_KINDS[fxKey.value % FX_KINDS.length]
+  fxKey.value += 1
+  document.documentElement.classList.add('fx-running')
+  clearTimeout(fxTimer)
+  fxTimer = setTimeout(() => document.documentElement.classList.remove('fx-running'), 720)
+}
+onBeforeUnmount(() => {
+  clearTimeout(fxTimer)
+  document.documentElement.classList.remove('fx-running')
+})
+
 // 章节切换后强制回到页面顶部：
 // 固定导航高约 82px，若残留上一页的滚动位置，章节标题会被导航压住、动画区底部也会被切出视口。
 watch(
   () => route.path,
   () => {
     applyChapterTint(route.meta.chapter)
-    fxKind.value = FX_KINDS[fxKey.value % FX_KINDS.length]
-    fxKey.value += 1 // 自增靠 :key 强制重挂载 → CSS 动画重播
+    runFx()
     window.scrollTo({ top: 0, behavior: 'auto' })
   },
   { flush: 'post' }

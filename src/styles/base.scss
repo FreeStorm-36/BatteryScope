@@ -240,13 +240,15 @@ input[type='range'] {
 .fade-slide-leave-to { opacity: 0; transform: translateY(-12px); }
 
 // ── 章节切换的页面过渡 ──
-// 与上面的 .fade-slide 分开：.fade-slide 还被各页内部的卡片复用，
-// 这里单独给 router-view 用一套更短、更"让位给百叶窗"的过渡。
-// 出 180ms、进 260ms —— 原先 .fade-slide 进出各 0.5s，合计 1 秒，换章会明显发闷。
-.page-fade-enter-active { transition: opacity 260ms var(--ease-out), transform 260ms var(--ease-out); }
-.page-fade-leave-active { transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out); }
-.page-fade-enter-from { opacity: 0; transform: translateY(10px); }
-.page-fade-leave-to { opacity: 0; transform: translateY(-6px); }
+// ⚠️ 这里**只动 opacity，绝不使用 transform**。
+// 页面里有几十个 backdrop-filter 面板（.panel-glass / 微动画舞台等），
+// 父层一旦 transform，浏览器每帧都要重算所有背景模糊 —— 这是换章"卡卡的"的第一大来源。
+// 时间也刻意让位给后面的换章特效：出 240ms、进 220ms，且必须不短于特效的"盖满"阶段，
+// 好让真正耗时的 WebGL 初始化发生在幕布之后（见下面的 .page-fx 关键帧）。
+.page-fade-enter-active { transition: opacity 220ms var(--ease-out); }
+.page-fade-leave-active { transition: opacity 240ms var(--ease-out); will-change: opacity; }
+.page-fade-enter-from { opacity: 0; }
+.page-fade-leave-to { opacity: 0; }
 
 // ── 换章特效：四种交替 ──
 // App.vue 每换一次章就换一种效果（轮换顺序 blinds → curtain → iris → wipe），
@@ -255,20 +257,32 @@ input[type='range'] {
 .page-fx {
   position: fixed; inset: 0; z-index: 95;
   display: flex; pointer-events: none; overflow: hidden;
-  > i { background: linear-gradient(180deg, var(--bg-page), var(--bg-block)); }
+  // 独立成层：不和页面的 backdrop-filter 抢同一批合成层
+  contain: layout style paint;
+  > i {
+    background: linear-gradient(180deg, var(--bg-page), var(--bg-block));
+    will-change: transform;   // 提前提升为合成层，避免动画首帧才去创建
+  }
 
-  /* ① 竖百叶：12 条竖叶自上而下盖住，再自下而上掀开 */
+  /* 时间结构（四种效果共用同一条节奏，总长 680ms）：
+       0 — 18%   快速盖满（约 122ms）—— 必须在内容切换之前完成
+       18 — 70%  停住（约 353ms）—— WebGL 初始化就藏在这段里
+       70 — 100% 掀开（约 204ms）—— 这时页面已经画好了，露出来就是流畅的
+     之前是"边盖边换"，新页面的 3D 场景在主线程同步初始化约 200ms，
+     正好卡在特效中段 —— 那才是"卡卡的"的直接原因。 */
+
+  /* ① 竖百叶：竖叶自上而下盖住，再自下而上掀开 */
   &[data-fx='blinds'] {
     flex-direction: row;
     > i { flex: 1 1 0; height: 100%;
       border-right: 1px solid color-mix(in srgb, var(--hue-chapter) 10%, transparent);
-      animation: fx-blinds 620ms var(--ease-in-out) both; }
+      animation: fx-blinds 680ms var(--ease-in-out) both; }
   }
-  /* ② 横幕：12 条横带从中间向两侧铺开再收走 */
+  /* ② 横幕：横带从中间向两侧铺开再收走 */
   &[data-fx='curtain'] {
     flex-direction: column;
     > i { flex: 1 1 0; width: 100%;
-      animation: fx-curtain 600ms var(--ease-in-out) both; }
+      animation: fx-curtain 680ms var(--ease-in-out) both; }
   }
   /* ③ 圆形开合：从标题附近张开一个圆把画面吞掉，再收回 */
   &[data-fx='iris'] {
@@ -279,37 +293,56 @@ input[type='range'] {
       animation: fx-iris 680ms var(--ease-in-out) both;
     }
   }
-  /* ④ 斜向扫掠：一条斜带从左侧扫过整屏 */
+  /* ④ 整屏横扫：一块带斜切的整幅面板自左滑入盖满，再向右滑出。
+         （原先是一条窄斜带，盖不满整屏 —— 内容切换会从缝里透出来，
+           所以只有这一种改成整幅面板。） */
   &[data-fx='wipe'] {
     > i { display: none; }
     &::after {
-      content: ''; position: absolute; inset: -25% -45%;
-      background: linear-gradient(105deg,
-        transparent 28%,
-        color-mix(in srgb, var(--hue-chapter) 12%, var(--bg-page)) 41%,
-        var(--bg-block) 56%,
-        transparent 72%);
-      animation: fx-wipe 640ms var(--ease-in-out) both;
+      content: ''; position: absolute; inset: 0 -12%;
+      background: linear-gradient(100deg,
+        var(--bg-page) 0%,
+        color-mix(in srgb, var(--hue-chapter) 14%, var(--bg-block)) 46%,
+        var(--bg-block) 100%);
+      animation: fx-wipe 680ms var(--ease-in-out) both;
     }
   }
 }
 @keyframes fx-blinds {
   0%   { transform: scaleY(0); transform-origin: top; }
-  42%  { transform: scaleY(1); transform-origin: top; }
-  58%  { transform: scaleY(1); transform-origin: bottom; }
+  18%  { transform: scaleY(1); transform-origin: top; }
+  70%  { transform: scaleY(1); transform-origin: bottom; }
   100% { transform: scaleY(0); transform-origin: bottom; }
 }
 @keyframes fx-curtain {
   0%   { transform: scaleX(0); }
-  45%  { transform: scaleX(1); }
-  55%  { transform: scaleX(1); }
+  18%  { transform: scaleX(1); }
+  70%  { transform: scaleX(1); }
   100% { transform: scaleX(0); }
 }
 @keyframes fx-iris {
   0%   { clip-path: circle(0% at 50% 42%); }
-  48%  { clip-path: circle(150% at 50% 42%); }
-  52%  { clip-path: circle(150% at 50% 42%); }
+  18%  { clip-path: circle(150% at 50% 42%); }
+  70%  { clip-path: circle(150% at 50% 42%); }
   100% { clip-path: circle(0% at 50% 42%); }
+}
+@keyframes fx-wipe {
+  0%   { transform: translateX(-100%) skewX(-6deg); }
+  18%  { transform: translateX(0) skewX(0deg); }
+  70%  { transform: translateX(0) skewX(0deg); }
+  100% { transform: translateX(100%) skewX(6deg); }
+}
+
+// ── 过渡期间临时关掉背景模糊 ──
+// backdrop-filter 是全站最贵的一类效果：幕布在其上方做动画时，
+// 浏览器每帧都要为整屏重新算一遍背景模糊，直接掉帧。
+// 幕布遮住的这 700ms 里它本来也看不见，索性关掉。
+// App.vue 在换章时给 <html> 挂 .fx-running，动画结束就移除。
+.fx-running .panel-glass,
+.fx-running .part-float,
+.fx-running .ma-stage {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 @keyframes fx-wipe {
   0%   { transform: translateX(-125%) skewX(-8deg); }
