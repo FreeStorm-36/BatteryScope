@@ -7,13 +7,16 @@
   // 会在深色卡片上渲染成一条浅灰轨道，是全站最容易露怯的一处不协调。
   color-scheme: dark;
 
-  // ── 深色底色（深蓝黑，带科技感而非死灰） ──
-  --bg-page: #0a0e1a;
-  --bg-block: #0d1220;
-  --panel-1: #131a2b;
-  --panel-2: #182138;
+  // ── 深色底色 ──
+  // 参考站（矿安智感）用的是近黑石墨 hsl(215,10%,8%) / #13161A / #191D22 + 白色细边。
+  // 这里保留 BatteryScope 的蓝调身份，但把饱和度压下来、整体提亮一档：
+  // 原先 #0a0e1a 太"纯蓝黑"，卡片面和页面底之间几乎拉不出层次。
+  --bg-page: #0d1014;
+  --bg-block: #10141a;
+  --panel-1: #161b21;
+  --panel-2: #1c222a;
 
-  // ── 品牌色（霓虹蓝/青，科技感主色） ──
+  // ── 品牌色（霓虹蓝/青，科技感主色 —— 保持不变，是这个站的身份） ──
   --blue: #4da8ff;             // 主蓝
   --blue-deep: #2563eb;
   --cyan: #22d3ee;             // Li⁺ 青
@@ -22,33 +25,49 @@
   --red: #ef4444;              // 失效
   --violet: #a78bfa;           // 正极材料
 
-  // ── 文本三级（冷白向，保持科技通透感） ──
-  // ⚠️ --text-3 原为 #64748b，实测对比度只有 3.65—4.05:1（#131a2b / #0d1220 / #0a0e1a 三种底色），
-  // 低于 WCAG AA 正文要求的 4.5:1；而它恰好被 82 处引用、且大量绑在 9—12px 小字号上——
-  // 承载的正是"口径 / 示意 / 非实测"这类科学诚实性声明，最该被看清的文字反而最暗。
-  // 提到 #8b9bb4 后三种底色分别为 6.12 / 5.47 / 5.62:1（卡片面上亦有 5.67:1），
-  // 全站达标，同时仍明显低于 --text-2，层级关系不变。
-  --text-1: #eaf2ff;
-  --text-2: #9fb0c8;
-  --text-3: #8b9bb4;
+  // ── 文本：改为**白色透明度分层**（参考站做法） ──
+  // 好处是同一套 token 落在页面底 / 卡片面 / 玻璃层上都自动成立，
+  // 不会出现"某个底色下偏灰、换一块底就偏亮"的漂移。
+  // ⚠️ 第三级没有照抄参考站的 0.45 —— 实测约 4.2:1，达不到 WCAG AA；
+  //    这里取 0.58（约 6.3—6.6:1），与上一轮把 --text-3 提到 #8b9bb4 的意图一致。
+  --text-1: rgba(255, 255, 255, 0.93);
+  --text-2: rgba(255, 255, 255, 0.72);
+  --text-3: rgba(255, 255, 255, 0.58);
 
-  // ── 描边与辉光（霓虹感，强度收敛） ──
-  --hairline: rgba(90, 150, 220, 0.22);
-  --hairline-strong: rgba(120, 180, 255, 0.38);
-  --glow-blue: 0 0 14px rgba(77, 168, 255, 0.18); // 蓝色辉光（弱化）
-  --glow-cyan: 0 0 14px rgba(34, 211, 238, 0.18);
-  --panel-bg: rgba(15, 21, 38, 0.66);
+  // ── 描边与辉光 ──
+  // 参考站用中性白细边，辉光几乎为零。这里保留一点蓝调（否则和组件里大量既有的
+  // rgba(77,168,255,…) 硬编码描边会打架），但明显收敛。
+  --hairline: rgba(140, 172, 205, 0.16);
+  --hairline-strong: rgba(160, 195, 230, 0.30);
+  --glow-blue: 0 0 14px rgba(77, 168, 255, 0.12);
+  --glow-cyan: 0 0 14px rgba(34, 211, 238, 0.12);
+  --panel-bg: rgba(18, 22, 28, 0.62);
 
-  // ── 字体 ──
-  --sans: -apple-system, 'PingFang SC', 'HarmonyOS Sans SC', 'MiSans', 'Microsoft YaHei', 'Source Han Sans SC', system-ui, sans-serif;
-  --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  // ── 字体：标题展示体 / 正文黑体 / 数字等宽（参考站的三层结构） ──
+  // 参考站标题用霞鹜文楷（LXGW WenKai），自带字体文件。
+  // 这里**不引入字体文件** —— 那会破坏本作品"断网可用 + 只用系统字体栈、无第三方字体授权问题"
+  // 的既有承诺。改为按可用性回退：装了霞鹜文楷就用，否则落到系统楷体（Windows 自带 KaiTi），
+  // 再退到黑体。视觉上是同一路"楷系标题 + 黑体正文"的对比，且零体积、零授权风险。
+  --sans: 'PingFang SC', 'HarmonyOS Sans SC', 'MiSans', 'Microsoft YaHei', 'Source Han Sans SC', system-ui, sans-serif;
+  --display: 'LXGW WenKai Screen', 'LXGW WenKai Screen R', 'Kaiti SC', 'STKaiti', 'KaiTi', 'KaiTi_GB2312', 'PingFang SC', 'Microsoft YaHei', serif;
+  --mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', Consolas, 'Courier New', monospace;
 
-  --radius: 18px;
-  --radius-sm: 10px;
+  // ── 圆角（参考站 6/8/10/12，比原先的 18 更利落，也更像仪表盘） ──
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
 
-  // ── 阴影层级（含蓝色光晕的"厚度"） ──
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 34px rgba(10, 20, 45, 0.5);
-  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 54px rgba(10, 20, 45, 0.55);
+  // ── 阴影：柔和投影 + 一圈细边，而不是彩色辉光（参考站做法） ──
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.40), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(255, 255, 255, 0.07);
+
+  // ── 动效（与参考站同源，便于统一节奏） ──
+  --dur-fast: 150ms;
+  --dur-normal: 250ms;
+  --dur-slow: 400ms;
+  --dur-page: 500ms;
+  --ease-out: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -163,9 +182,20 @@ html, body {
   font-size: 14px; letter-spacing: 0.24em; color: var(--cyan);
   text-transform: uppercase; margin-bottom: 7px; font-weight: 500;
 }
+// ── 标题排版：中文大标题走展示体（楷系），正文与英文保持黑体 ──
+// 这是参考站最有辨识度的一处处理（它们注释原话是"标题使用展示字体，正文使用系统黑体"）。
+// ⚠️ 刻意**不含 h1**：首页品牌词是拉丁字母 "BatteryScope"，落到楷体里会被渲染成衬线字形，
+//    气质会突然从"科技"跳到"文雅"。参考站那边英文副标题同样保持无衬线，这里对齐它。
+// 也不含 h3—h6：楷体在小字号 + 合成粗体下容易发糊。
+h2, .chapter-title {
+  font-family: var(--display);
+  // 楷体的字面比黑体小、重心偏高，字重各补一点，避免看起来"比原来轻"
+  font-weight: 600;
+  letter-spacing: 0;
+}
 .chapter-title {
   font-size: clamp(25px, 3vw, 37px);
-  font-weight: 700; letter-spacing: -0.01em; line-height: 1.25;
+  line-height: 1.25;
   color: var(--text-1);
 }
 .chapter-sub { color: var(--text-2); font-size: 17px; margin-top: 6px; max-width: 60ch; }
@@ -189,6 +219,38 @@ input[type='range'] {
 .fade-slide-enter-active, .fade-slide-leave-active { transition: opacity 0.5s cubic-bezier(0.2, 0.7, 0.3, 1), transform 0.5s cubic-bezier(0.2, 0.7, 0.3, 1); }
 .fade-slide-enter-from { opacity: 0; transform: translateY(20px); }
 .fade-slide-leave-to { opacity: 0; transform: translateY(-12px); }
+
+// ── 章节切换的页面过渡 ──
+// 与上面的 .fade-slide 分开：.fade-slide 还被各页内部的卡片复用，
+// 这里单独给 router-view 用一套更短、更"让位给百叶窗"的过渡。
+// 出 180ms、进 260ms —— 原先 .fade-slide 进出各 0.5s，合计 1 秒，换章会明显发闷。
+.page-fade-enter-active { transition: opacity 260ms var(--ease-out), transform 260ms var(--ease-out); }
+.page-fade-leave-active { transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out); }
+.page-fade-enter-from { opacity: 0; transform: translateY(10px); }
+.page-fade-leave-to { opacity: 0; transform: translateY(-6px); }
+
+// ── 换章百叶窗（"翻页"效果） ──
+// 12 条竖叶依次"盖住 → 掀开"，每条错开 26ms，整体约 620ms。
+// 纯 CSS：每条叶子用 scaleY 从 0 长到 1（盖住），在中点切换 transform-origin 后
+// 再缩回 0（掀开），于是看起来是从上往下盖、再从下往上揭。
+// pointer-events: none —— 永远不吃点击。
+.page-blinds {
+  position: fixed; inset: 0; z-index: 95;
+  display: flex; pointer-events: none;
+  i {
+    flex: 1 1 0; height: 100%;
+    background: linear-gradient(180deg, var(--bg-page), var(--bg-block));
+    border-right: 1px solid rgba(77, 168, 255, 0.06);
+    transform: scaleY(0);
+    animation: blind-sweep 620ms var(--ease-in-out) both;
+  }
+}
+@keyframes blind-sweep {
+  0%   { transform: scaleY(0); transform-origin: top; }
+  42%  { transform: scaleY(1); transform-origin: top; }
+  58%  { transform: scaleY(1); transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
 
 // 滚动条（蓝色系）
 ::-webkit-scrollbar { width: 10px; height: 10px; }

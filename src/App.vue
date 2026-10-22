@@ -3,10 +3,16 @@
   <button v-if="$route.path !== '/learn'" class="learning-fab" @click="openLibrary">学习空间 ↗</button>
   <component v-if="Library && $route.path !== '/learn'" :is="Library" ref="libraryRef" embedded />
   <router-view v-slot="{ Component }">
-    <transition name="fade-slide" mode="out-in">
+    <transition name="page-fade" mode="out-in">
       <component :is="Component" :key="$route.path" />
     </transition>
   </router-view>
+  <!-- 换章百叶窗：每次路由变化重放一次，12 条竖叶依次"盖住 → 掀开"。
+       放在导航之下（z-index 95 < 导航 100），所以读起来是"内容区翻页"、导航保持稳定。
+       首次加载不播（blindKey 初值 0），不会拖慢首屏。 -->
+  <div v-if="blindKey" :key="blindKey" class="page-blinds" aria-hidden="true">
+    <i v-for="n in 12" :key="n" :style="{ animationDelay: (n - 1) * 26 + 'ms' }"></i>
+  </div>
   <!-- 换章时懒加载 chunk 的等待反馈。延迟 150ms 才出现（见 main.js），
        所以本机快速换章不会闪。 -->
   <div v-if="routeLoading" class="route-progress" role="status" aria-live="polite">
@@ -30,11 +36,16 @@ async function openLibrary() {
 const route = useRoute()
 const routeLoading = inject('routeLoading', ref(false))
 
+// 百叶窗重放用的 key：初值 0 表示"还没换过章"，此时不渲染，
+// 所以进站第一眼不会有幕布扫过。每次换章自增，靠 :key 强制重挂载 → CSS 动画重播。
+const blindKey = ref(0)
+
 // 章节切换后强制回到页面顶部：
 // 固定导航高约 82px，若残留上一页的滚动位置，章节标题会被导航压住、动画区底部也会被切出视口。
 watch(
   () => route.path,
   () => {
+    blindKey.value += 1
     window.scrollTo({ top: 0, behavior: 'auto' })
   },
   { flush: 'post' }
